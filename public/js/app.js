@@ -502,7 +502,8 @@ const btnMusica = $('btnMusica');
 document.documentElement.classList.add('portada-abierta');
 btnMusica.hidden = true;
 
-function pintarBotonMusica(suena) {
+function pintarBotonMusica(suena, cargando = false) {
+  btnMusica.classList.toggle('cargando', Boolean(cargando));
   btnMusica.classList.toggle('apagada', !suena);
   btnMusica.setAttribute('aria-pressed', String(suena));
   btnMusica.setAttribute('aria-label', suena ? 'Silenciar música' : 'Activar música');
@@ -510,6 +511,8 @@ function pintarBotonMusica(suena) {
 }
 musica.alCambiar(pintarBotonMusica);
 btnMusica.addEventListener('click', () => musica.alternar());
+// La pista se prepara una sola vez en segundo plano mientras se ve la portada.
+setTimeout(() => musica.precargar().catch(() => {}), 700);
 
 $('btnEntrar').addEventListener('click', async () => {
   await musica.iniciar(); // el clic es el gesto que permite reproducir sonido
