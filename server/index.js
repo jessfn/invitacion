@@ -3,17 +3,16 @@ import { readFile, stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { timingSafeEqual } from 'node:crypto';
 import { ENCUESTAS, ENCUESTAS_POR_ID, EVENTO } from './datos.js';
 import { abrirDb } from './db.js';
 import { cargarSecreto, crearLimitador, crearSeguridad } from './seguridad.js';
+import { crearAdmin } from './admin.js';
 
 const RAIZ = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PUBLICO = join(RAIZ, 'public');
 const DATOS = join(RAIZ, 'data');
 
 const PUERTO = Number(process.env.PORT ?? 3000);
-const ADMIN_KEY = process.env.ADMIN_KEY ?? '';
 const MAX_POR_IP = Number(process.env.MAX_VOTOS_POR_IP ?? 15);
 const ESTRICTO = process.env.MODO_ESTRICTO !== '0';
 const MIN_SEGUNDOS = Number(process.env.MIN_SEGUNDOS ?? 6);
@@ -26,6 +25,7 @@ const seg = crearSeguridad({
 const limitaApi = crearLimitador({ ventanaMs: 60_000, maximo: 90 });
 const limitaVoto = crearLimitador({ ventanaMs: 10 * 60_000, maximo: 8 });
 
+let admin;
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -203,13 +203,8 @@ function misRespuestas(propias) {
   };
 }
 
-const mismaClave = (a, b) => {
-  const A = Buffer.from(a);
-  const B = Buffer.from(b);
-  return A.length === B.length && timingSafeEqual(A, B);
-};
-
 async function api(req, res, ruta) {
+  if (ruta.startsWith('/api/admin/')) return admin.manejar(req, res, ruta);
   const id = identificar(req);
   const extra = id.setCookie ? { 'Set-Cookie': id.setCookie } : {};
   if (!limitaApi(id.ipHash)) return json(res, 429, { error: 'Demasiadas solicitudes.' }, extra);
@@ -269,20 +264,8 @@ async function api(req, res, ruta) {
           : 'Este celular ya registró sus respuestas.';
       return json(res, r.motivo === 'ip' ? 429 : 409, { error: msg, yaVoto: r.motivo !== 'ip' }, extra);
     }
+    admin.notificar();
     return json(res, 201, { ok: true }, extra);
-  }
-
-  if (req.method === 'GET' && ruta === '/api/admin/resultados') {
-    const clave = String(req.headers['x-admin-key'] ?? '');
-    if (!ADMIN_KEY || !mismaClave(clave, ADMIN_KEY)) return json(res, 401, { error: 'No autorizado.' }, extra);
-    const base = resultadosPublicos([]);
-    const texto = ENCUESTAS.flatMap((e) => {
-      const lista = [];
-      if (e.tipo === 'texto' || e.tipo === 'cancion') lista.push({ id: e.id, titulo: e.titulo, respuestas: db.textos(e.id) });
-      if (e.otro) lista.push({ id: `${e.id}_otro`, titulo: `${e.titulo} (otro)`, respuestas: db.textos(`${e.id}_otro`) });
-      return lista;
-    });
-    return json(res, 200, { ...base, textos: texto }, extra);
   }
 
   return json(res, 404, { error: 'No encontrado.' }, extra);
@@ -304,6 +287,7 @@ async function estatico(req, res, ruta) {
     res.writeHead(400, CABECERAS);
     return res.end();
   }
+  if (rel === '/admin' || rel === '/admin/') rel = '/admin.html';
   if (rel.endsWith('/')) rel += 'index.html';
   const archivo = normalize(join(PUBLICO, rel));
   if (archivo !== PUBLICO && !archivo.startsWith(PUBLICO + sep)) {
@@ -316,6 +300,7 @@ async function estatico(req, res, ruta) {
     const ext = extname(archivo).toLowerCase();
     res.writeHead(200, {
       ...CABECERAS,
+      ...(archivo.endsWith('admin.html') ? { 'X-Robots-Tag': 'noindex, nofollow' } : {}),
       'Content-Type': MIME[ext] ?? 'application/octet-stream',
       'Content-Length': info.size,
       'Cache-Control': ['.html', '.css', '.js'].includes(ext) ? 'no-cache' : 'public, max-age=86400'
@@ -334,6 +319,8 @@ async function estatico(req, res, ruta) {
   }
 }
 
+admin = crearAdmin({ db, seg, json, leerCuerpo, cabeceras: CABECERAS, rutaCredenciales: join(DATOS, 'admin.json') });
+
 const servidor = createServer(async (req, res) => {
   try {
     const { pathname } = new URL(req.url ?? '/', 'http://localhost');
@@ -349,5 +336,5 @@ const servidor = createServer(async (req, res) => {
 
 servidor.listen(PUERTO, () => {
   console.log(`Invitación DGTIC 2026 lista en http://localhost:${PUERTO}`);
-  if (!ADMIN_KEY) console.log('Tip: define ADMIN_KEY para consultar /api/admin/resultados');
+  console.log(admin.configurado ? `Panel de administración: http://localhost:${PUERTO}/admin` : 'Crea el administrador con: npm run admin:crear -- usuario clave');
 });

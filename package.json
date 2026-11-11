@@ -6,7 +6,8 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --watch server/index.js",
+    "admin:crear": "node server/crear-admin.js"
   },
   "engines": {
     "node": ">=22.13"

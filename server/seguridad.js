@@ -63,7 +63,7 @@ export function crearSeguridad({ secreto, confiarProxy }) {
     return { id, desde: ts, header: attrs.join('; ') };
   }
 
-  return { hashIp, ipDe, leerDispositivo, nuevaCookie };
+  return { hashIp, ipDe, leerDispositivo, nuevaCookie, firmar, iguales, leerCookies };
 }
 
 // Limitador sencillo en memoria: ventana deslizante por clave.

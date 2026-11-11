@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#03120d">
+  <title>Panel · Fiesta DGTIC 2026</title>
+  <link rel="icon" href="assets/logo.webp" type="image/webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <svg class="sprite" width="0" height="0" aria-hidden="true">
+    <defs>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+      <symbol id="i-utensils" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></symbol>
+      <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+      <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-soup" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9ZM7 21h10M11 3c-1 1.5 1 2.5 0 4M15 3c-1 1.5 1 2.5 0 4"/></symbol>
+      <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.5 6-7"/></symbol>
+      <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 16a2 2 0 0 1-2 2h-1v-6h3zM3 16a2 2 0 0 0 2 2h1v-6H3z"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+      <symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17M16 7h6v6"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- Acceso -->
+  <main class="acceso" id="acceso" hidden>
+    <form class="acceso__tarjeta" id="formLogin" autocomplete="on">
+      <img src="assets/logo.webp" alt="" width="84" height="76">
+      <h1>Panel de administración</h1>
+      <p>Fiesta de Fin de Año DGTIC 2026</p>
+      <label>Usuario<input name="usuario" type="text" autocomplete="username" required maxlength="80" autofocus></label>
+      <label>Contraseña<input name="clave" type="password" autocomplete="current-password" required maxlength="200"></label>
+      <p class="acceso__error" id="loginError" role="alert" hidden></p>
+      <button class="boton" type="submit" id="btnLogin"><svg class="ico"><use href="#i-lock"/></svg> Entrar</button>
+    </form>
+  </main>
+
+  <!-- Panel -->
+  <div class="panel" id="panel" hidden>
+    <header class="cab">
+      <div class="cab__marca">
+        <img src="assets/logo.webp" alt="" width="40" height="36">
+        <div><h1>Panel de resultados</h1><span>Fiesta de Fin de Año DGTIC 2026</span></div>
+      </div>
+      <div class="cab__acciones">
+        <span class="vivo" id="vivo" title="Conexión en tiempo real"><i></i><b>En vivo</b></span>
+        <button class="btn" id="btnCsv" type="button"><svg class="ico"><use href="#i-download"/></svg><span>Exportar CSV</span></button>
+        <button class="btn btn--sec" id="btnSalir" type="button"><svg class="ico"><use href="#i-logout"/></svg><span>Salir</span></button>
+      </div>
+    </header>
+
+    <section class="filtros" aria-label="Filtros">
+      <div class="seg" id="segRango" role="group" aria-label="Periodo">
+        <button type="button" data-v="todo" class="on">Todo</button>
+        <button type="button" data-v="hoy">Hoy</button>
+        <button type="button" data-v="24h">Últimas 24 h</button>
+      </div>
+      <div class="seg" id="segSeccion" role="group" aria-label="Sección">
+        <button type="button" data-v="todas" class="on">Todas</button>
+        <button type="button" data-v="Menú">Menú</button>
+        <button type="button" data-v="Música">Música</button>
+      </div>
+      <label class="buscar"><svg class="ico"><use href="#i-search"/></svg><input id="buscar" type="search" placeholder="Buscar opción…" autocomplete="off"></label>
+    </section>
+    <div class="activos" id="activos" hidden></div>
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="tarjeta tarjeta--ancha">
+      <div class="tarjeta__cab"><h2><svg class="ico"><use href="#i-trend"/></svg> Participación en el tiempo</h2><span id="tiempoNota"></span></div>
+      <div class="linea" id="linea"></div>
+    </section>
+
+    <section class="rejilla" id="rejilla"></section>
+
+    <section class="rejilla rejilla--textos" id="textos"></section>
+
+    <p class="pie">Los porcentajes se calculan sobre las personas que participaron con los filtros activos. En las preguntas de varias opciones pueden sumar más de 100%. Toca una opción para filtrar el resto del panel por quienes la eligieron.</p>
+  </div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

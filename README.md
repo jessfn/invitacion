@@ -20,18 +20,28 @@ Abre `http://localhost:3000`. Para verlo desde otro celular en la misma red usa 
 | Variable | Por defecto | Descripción |
 | --- | --- | --- |
 | `PORT` | `3000` | Puerto del servidor |
-| `ADMIN_KEY` | _(vacía)_ | Clave para consultar `/api/admin/resultados` (header `x-admin-key`) |
+| `ADMIN_USER` / `ADMIN_PASS` | _(vacías)_ | Credenciales del panel (alternativa a `npm run admin:crear`, útil en hosting) |
 | `MAX_VOTOS_POR_IP` | `15` | Tope de participaciones desde una misma red |
 | `MODO_ESTRICTO` | `1` | `0` desactiva el bloqueo por huella + IP |
 | `MIN_SEGUNDOS` | `6` | Tiempo mínimo entre abrir la página y votar |
 | `TRUST_PROXY` | `0` | `1` si corre detrás de un proxy (usa `X-Forwarded-For`) |
 | `SECRETO` | _(se genera)_ | Secreto para firmar cookies; si no se define se guarda en `data/secreto.key` |
 
-Ver resultados completos (incluye las canciones sugeridas):
+## Panel de administración
+
+Disponible en `/admin` (por ejemplo `http://localhost:3000/admin`). Muestra en tiempo real:
+participantes, favoritos del menú, géneros más votados, canciones pedidas y la participación en
+el tiempo, con porcentajes. Se puede filtrar por periodo, por sección, buscar opciones y tocar
+cualquier opción para ver solo a quienes la eligieron (filtros cruzados). Incluye exportar a CSV.
+
+Crear o cambiar el usuario (la contraseña se guarda con hash en `data/admin.json`, que no se sube a git):
 
 ```bash
-curl -H "x-admin-key: TU_CLAVE" http://localhost:3000/api/admin/resultados
+npm run admin:crear -- usuario contraseña
 ```
+
+En un servidor de producción ejecuta ese comando allí mismo, o define `ADMIN_USER` y `ADMIN_PASS`.
+El acceso está limitado a 8 intentos cada 15 minutos por red y la sesión dura 8 horas.
 
 ## Personalizar
 

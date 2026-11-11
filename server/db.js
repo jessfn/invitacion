@@ -86,6 +86,34 @@ export function abrirDb(ruta) {
       }
     },
 
+    // Datos del panel de administración, con filtros cruzados y rango de fechas.
+    // filtros: [[pregunta, valor], ...] -> solo votantes que dieron TODAS esas respuestas.
+    panel(filtros = [], desde = 0) {
+      const donde = ['1 = 1'];
+      const params = [];
+      if (desde > 0) {
+        donde.push('v.creado >= ?');
+        params.push(desde);
+      }
+      for (const [pregunta, valor] of filtros) {
+        donde.push('v.id IN (SELECT votante_id FROM respuestas WHERE pregunta = ? AND valor = ?)');
+        params.push(pregunta, valor);
+      }
+      const cond = donde.join(' AND ');
+      const total = db.prepare(`SELECT COUNT(*) AS n FROM votantes v WHERE ${cond}`).get(...params).n;
+      const conteos = db
+        .prepare(
+          `SELECT r.pregunta, r.valor, COUNT(*) AS n FROM respuestas r
+           JOIN votantes v ON v.id = r.votante_id WHERE ${cond} GROUP BY r.pregunta, r.valor`
+        )
+        .all(...params);
+      const tiempos = db
+        .prepare(`SELECT v.creado FROM votantes v WHERE ${cond} ORDER BY v.creado`)
+        .all(...params)
+        .map((r) => r.creado);
+      return { total, conteos, tiempos };
+    },
+
     respuestasDe: (votanteId) => q.respuestasDe.all(votanteId),
     conteos: () => q.conteos.all(),
     totalVotantes: () => q.total.get().n,
