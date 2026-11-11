@@ -222,6 +222,14 @@ function dibujar() {
   atras = false;
 }
 
+// La pregunta de la canción retoma los géneros que la persona acaba de elegir.
+function descripcionDe(enc) {
+  if (enc.tipo !== 'cancion') return enc.descripcion;
+  const gustos = encuestas.find((e) => e.id === 'musica-baile');
+  const txt = gustos ? textoRespuesta(gustos) : '';
+  return txt ? `Ya elegiste ${txt}. ¿Qué canción no puede faltar? (opcional)` : enc.descripcion;
+}
+
 function cabecera(icon, titulo, desc) {
   return h('div', { class: 'paso__cab' },
     h('div', { class: 'paso__icono' }, icono(icon)),
@@ -345,7 +353,7 @@ function vistaPregunta(enc) {
 
   refrescar();
   return [
-    cabecera(enc.icono, enc.titulo, enc.descripcion),
+    cabecera(enc.icono, enc.titulo, descripcionDe(enc)),
     ayuda,
     cuerpo,
     error ? h('p', { class: 'error', role: 'alert' }, error) : null,

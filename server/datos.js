@@ -5,9 +5,9 @@ export const EVENTO = {
   titulo: 'Fiesta de Fin de Año 2026',
   organiza: 'DGTIC',
   // Formato ISO con zona horaria, p. ej. '2026-12-12T15:00:00-06:00'.
-  // Si se deja en null se muestra "Fecha por confirmar" y se oculta la cuenta regresiva.
-  fecha: null,
-  lugar: 'Banquetes Yahad',
+  // (Viernes 4 de diciembre de 2026, 3:00 pm). Si se deja en null se muestra "Fecha por confirmar" y se oculta la cuenta regresiva.
+  fecha: '2026-12-04T15:00:00-06:00',
+  lugar: 'CENSODEP',
   direccion: '',
   mapa: '',
   recepcion: '3:00 pm',
