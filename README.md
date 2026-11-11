@@ -66,13 +66,8 @@ Los datos (votos) viven en PostgreSQL y los secretos en `/etc/invitacion.env` y 
 ## Música de fondo
 
 La invitación reproduce en bucle `public/assets/musica/mix-navideno.mp3` cuando el invitado toca
-«Abrir invitación». Ese archivo **no se sube a git** (es una mezcla con canciones de terceros y el
-repositorio es público): se copia al servidor aparte. Si no existe, la página usa unas campanas
-sintetizadas como respaldo.
-
-```bash
-scp public/assets/musica/mix-navideno.mp3 root@IP_DEL_VPS:/opt/invitacion/public/assets/musica/
-```
+«Abrir invitación». Para cambiarla basta reemplazar ese archivo (y subir el número `?v=` en
+`public/js/musica.js` para que los navegadores no usen la copia anterior).
 
 ## Personalizar
 

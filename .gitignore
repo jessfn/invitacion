@@ -3,6 +3,3 @@ data/
 .env
 *.log
 .DS_Store
-
-# Audio con derechos de terceros: no se sube al repositorio público (se copia al servidor aparte)
-public/assets/musica/*.mp3
