@@ -222,9 +222,7 @@ async function api(req, res, ruta) {
     });
 
   if (req.method === 'GET' && ruta === '/api/evento') {
-    const catalogo = ENCUESTAS.map(({ id: eid, titulo, descripcion, icono, tipo, desplegable, otro, max, maxLength, placeholder, opciones }) => ({
-      id: eid, titulo, descripcion, icono, tipo, desplegable, otro, max, maxLength, placeholder, opciones
-    }));
+    const catalogo = ENCUESTAS.map((e) => ({ ...e }));
     return json(res, 200, { evento: EVENTO, encuestas: catalogo, yaVoto: Boolean(yaVoto()) }, extra);
   }
 

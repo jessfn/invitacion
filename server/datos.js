@@ -33,41 +33,48 @@ export const EVENTO = {
   ]
 };
 
-// tipo: 'unica' (una opción) | 'multiple' (hasta "max") | 'texto' (respuesta libre opcional)
+// tipo: 'unica' (una opción) | 'multiple' (hasta "max") | 'cancion' (artista y tema, opcional)
+// seccion y explica se muestran arriba de cada pregunta para que se entienda de qué trata.
 export const ENCUESTAS = [
   {
     id: 'entrada',
-    titulo: 'Primer tiempo',
-    descripcion: '¿Qué te gustaría que sirvan de entrada?',
+    seccion: 'Menú',
+    titulo: 'Entrada',
+    explica: 'Es el primer tiempo de la comida: se sirve antes del plato fuerte y puede ser una crema o un espagueti.',
+    descripcion: 'Elige la que más te guste.',
     icono: 'soup',
     tipo: 'unica',
     opciones: [
-      { id: 'crema-brocoli', label: 'Crema de brócoli' },
-      { id: 'crema-cilantro', label: 'Crema de cilantro' },
-      { id: 'crema-zanahoria', label: 'Crema de zanahoria' },
-      { id: 'espagueti-perejil', label: 'Espagueti al perejil' },
-      { id: 'espagueti-pomodoro', label: 'Espagueti pomodoro' },
-      { id: 'espagueti-crema', label: 'Espagueti a la crema' }
+      { id: 'crema-brocoli', label: 'Crema de brócoli', desc: 'Crema' },
+      { id: 'crema-cilantro', label: 'Crema de cilantro', desc: 'Crema' },
+      { id: 'crema-zanahoria', label: 'Crema de zanahoria', desc: 'Crema' },
+      { id: 'espagueti-perejil', label: 'Espagueti al perejil', desc: 'Pasta' },
+      { id: 'espagueti-pomodoro', label: 'Espagueti pomodoro', desc: 'Pasta con salsa de jitomate' },
+      { id: 'espagueti-crema', label: 'Espagueti a la crema', desc: 'Pasta' }
     ]
   },
   {
     id: 'fuerte',
-    titulo: 'Segundo tiempo',
-    descripcion: 'Elige tu plato fuerte favorito.',
+    seccion: 'Menú',
+    titulo: 'Plato fuerte',
+    explica: 'Es el segundo tiempo y el platillo principal de la comida: la carne o el pollo.',
+    descripcion: 'Elige tu favorito.',
     icono: 'utensils',
     tipo: 'unica',
     opciones: [
-      { id: 'lomo-3-chiles', label: 'Lomo a los 3 chiles' },
-      { id: 'lomo-jugo', label: 'Lomo en su jugo' },
-      { id: 'pechuga-3-chiles', label: 'Pechuga cordón blue a los 3 chiles' },
-      { id: 'pechuga-tamarindo', label: 'Pechuga cordón blue en salsa de tamarindo' },
-      { id: 'pierna-crema', label: 'Pierna o muslo a la crema con elote y rajas' }
+      { id: 'lomo-3-chiles', label: 'Lomo a los 3 chiles', desc: 'Lomo de cerdo' },
+      { id: 'lomo-jugo', label: 'Lomo en su jugo', desc: 'Lomo de cerdo' },
+      { id: 'pechuga-3-chiles', label: 'Pechuga cordón blue a los 3 chiles', desc: 'Pollo relleno' },
+      { id: 'pechuga-tamarindo', label: 'Pechuga cordón blue en salsa de tamarindo', desc: 'Pollo relleno' },
+      { id: 'pierna-crema', label: 'Pierna o muslo a la crema con elote y rajas', desc: 'Pollo' }
     ]
   },
   {
     id: 'guarnicion',
+    seccion: 'Menú',
     titulo: 'Guarnición',
-    descripcion: '¿Con qué lo acompañamos?',
+    explica: 'Es lo que acompaña al plato fuerte en el mismo plato.',
+    descripcion: 'Elige con qué lo acompañamos.',
     icono: 'leaf',
     tipo: 'unica',
     opciones: [
@@ -77,8 +84,10 @@ export const ENCUESTAS = [
   },
   {
     id: 'musica-comida',
+    seccion: 'Música',
     titulo: 'Música para la comida',
-    descripcion: 'Ambiente mientras comemos.',
+    explica: 'Es la música de fondo mientras comemos, de 4:00 a 5:00 pm. No es para bailar.',
+    descripcion: 'Elige el ambiente que prefieres.',
     icono: 'headphones',
     tipo: 'unica',
     desplegable: true,
@@ -98,8 +107,10 @@ export const ENCUESTAS = [
   },
   {
     id: 'musica-baile',
+    seccion: 'Música',
     titulo: 'Música para bailar',
-    descripcion: '¿Qué géneros quieres en la pista?',
+    explica: 'Son los géneros que el DJ pondrá en la pista de baile durante la fiesta.',
+    descripcion: 'Elige hasta 3 estilos. Si no está el tuyo, usa "Otro".',
     icono: 'music',
     tipo: 'multiple',
     desplegable: true,
@@ -109,38 +120,50 @@ export const ENCUESTAS = [
       { id: 'cumbia', label: 'Cumbia' },
       { id: 'cumbia-sonidera', label: 'Cumbia sonidera' },
       { id: 'cumbia-nortena', label: 'Cumbia norteña' },
+      { id: 'cumbia-rebajada', label: 'Cumbia rebajada' },
+      { id: 'cumbia-pop', label: 'Cumbia pop' },
       { id: 'salsa', label: 'Salsa' },
       { id: 'merengue', label: 'Merengue' },
       { id: 'bachata', label: 'Bachata' },
       { id: 'vallenato', label: 'Vallenato' },
+      { id: 'tropical', label: 'Tropical / Sonidero' },
       { id: 'banda', label: 'Banda' },
       { id: 'norteno', label: 'Norteño' },
       { id: 'corridos', label: 'Corridos tumbados' },
       { id: 'regional', label: 'Regional mexicano' },
+      { id: 'mariachi-baile', label: 'Mariachi' },
       { id: 'reggaeton', label: 'Reggaetón' },
       { id: 'reggaeton-old', label: 'Reggaetón old school' },
+      { id: 'reggaeton-romantico', label: 'Reggaetón romántico' },
       { id: 'perreo', label: 'Perreo' },
+      { id: 'dembow', label: 'Dembow' },
       { id: 'trap', label: 'Trap' },
+      { id: 'trap-latino', label: 'Trap latino' },
       { id: 'hiphop', label: 'Hip hop / Rap' },
       { id: 'urbano', label: 'Urbano latino' },
       { id: 'pop-es', label: 'Pop en español' },
       { id: 'pop-en', label: 'Pop en inglés' },
+      { id: 'baladas-baile', label: 'Baladas pop' },
       { id: 'rock-es', label: 'Rock en español' },
       { id: 'rock-en', label: 'Rock en inglés' },
       { id: 'electronica', label: 'Electrónica / House' },
+      { id: 'techno', label: 'Techno' },
       { id: 'disco', label: 'Disco y funk' },
+      { id: 'reggae', label: 'Reggae' },
+      { id: 'ska', label: 'Ska' },
       { id: 'ochentas', label: 'Éxitos de los 80s' },
       { id: 'noventas', label: 'Éxitos de los 90s' },
       { id: 'dosmiles', label: 'Éxitos de los 2000s' },
-      { id: 'tropical', label: 'Tropical / Sonidero' },
       { id: 'kpop', label: 'K-pop' },
       { id: 'otro', label: 'Otro…', otro: true }
     ]
   },
   {
     id: 'cancion',
+    seccion: 'Música',
     titulo: 'Pide tu canción',
-    descripcion: 'Opcional: dinos qué canción quieres escuchar.',
+    explica: 'Escribe el artista y el nombre de una canción que quieras escuchar en la fiesta. Es opcional.',
+    descripcion: 'Primero el artista y después la canción.',
     icono: 'disc',
     tipo: 'cancion',
     maxLength: 60

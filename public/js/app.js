@@ -168,7 +168,7 @@ let respuestas = {};
 let error = '';
 let enviando = false;
 let atras = false;
-const abiertos = new Set();
+let modalActivo = null;
 
 const OTRO = (enc) => `${enc.id}_otro`;
 
@@ -230,10 +230,14 @@ function descripcionDe(enc) {
   return txt ? `Ya elegiste ${txt}. ¿Qué canción no puede faltar? (opcional)` : enc.descripcion;
 }
 
-function cabecera(icon, titulo, desc) {
-  return h('div', { class: 'paso__cab' },
-    h('div', { class: 'paso__icono' }, icono(icon)),
-    h('div', {}, h('h3', {}, titulo), h('p', { class: 'paso__desc' }, desc))
+function cabecera(icon, titulo, desc, enc) {
+  return h('div', { class: 'paso__intro' },
+    enc?.seccion ? h('span', { class: 'paso__seccion' }, enc.seccion) : null,
+    h('div', { class: 'paso__cab' },
+      h('div', { class: 'paso__icono' }, icono(icon)),
+      h('div', {}, h('h3', {}, titulo), h('p', { class: 'paso__desc' }, desc))
+    ),
+    enc?.explica ? h('p', { class: 'explica' }, icono('info'), h('span', {}, h('b', {}, '¿Qué es? '), enc.explica)) : null
   );
 }
 
@@ -281,37 +285,69 @@ function vistaPregunta(enc) {
         })
       : null;
 
-    let panel;
     let etiquetaBoton;
     let subBoton;
+    let contadorModal = null;
+    let botonAbrir = null;
+    let abrirModal = () => {};
+
     if (enc.desplegable) {
-      const abierto = abiertos.has(enc.id);
       etiquetaBoton = h('span', {});
       subBoton = h('small', {});
-      panel = h('div', { class: 'desplegable__panel', hidden: !abierto }, lista, campoOtro);
-      const envoltorio = h('div', { class: `desplegable${abierto ? ' abierto' : ''}` });
-      const boton = h('button', {
-        type: 'button', class: 'desplegable__boton', 'aria-expanded': String(abierto),
-        onclick: () => {
-          const abre = panel.hidden;
-          panel.hidden = !abre;
-          envoltorio.classList.toggle('abierto', abre);
-          boton.setAttribute('aria-expanded', String(abre));
-          abre ? abiertos.add(enc.id) : abiertos.delete(enc.id);
-        }
-      }, h('span', {}, etiquetaBoton, subBoton), icono('chevron'));
-      envoltorio.append(boton, panel);
-      cuerpo = envoltorio;
+      botonAbrir = h('button', { type: 'button', class: 'desplegable__boton', 'aria-haspopup': 'dialog', onclick: () => abrirModal() },
+        h('span', {}, etiquetaBoton, subBoton), icono('chevron'));
+      cuerpo = h('div', { class: 'desplegable' }, botonAbrir);
     } else {
       cuerpo = h('div', {}, lista, campoOtro);
     }
 
-    const cerrar = () => {
-      if (!enc.desplegable) return;
-      panel.hidden = true;
-      cuerpo.classList.remove('abierto');
-      cuerpo.firstChild.setAttribute('aria-expanded', 'false');
-      abiertos.delete(enc.id);
+    // Ventana modal: hoja inferior en celular y diálogo centrado en computadora, con scroll interno.
+    abrirModal = () => {
+      const dlg = h('dialog', { class: 'modal', 'aria-label': enc.titulo });
+      const cerrarDlg = () => dlg.close();
+      const norm = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+      const vacio = h('p', { class: 'modal__vacio', hidden: true }, 'No encontramos ese estilo. Usa «Otro…» para escribirlo.');
+      const buscador = enc.opciones.length > 10
+        ? h('input', {
+            class: 'campo modal__buscar', type: 'search', placeholder: 'Buscar…', autocomplete: 'off', 'aria-label': 'Buscar',
+            oninput: (e) => {
+              const q = norm(e.target.value.trim());
+              let visibles = 0;
+              for (const [id, b] of botones) {
+                const o = enc.opciones.find((x) => x.id === id);
+                const ok = !q || o.otro || norm(o.label).includes(q);
+                b.hidden = !ok;
+                if (ok) visibles++;
+              }
+              vacio.hidden = visibles > 0;
+            }
+          })
+        : null;
+      contadorModal = h('span', { class: 'paso__ayuda' });
+      dlg.append(
+        h('div', { class: 'modal__hoja' },
+          h('div', { class: 'modal__cab' },
+            h('div', {}, h('h3', {}, enc.titulo), contadorModal),
+            h('button', { type: 'button', class: 'modal__x', 'aria-label': 'Cerrar', onclick: cerrarDlg }, icono('x'))),
+          buscador,
+          h('div', { class: 'modal__cuerpo' }, lista, vacio, campoOtro),
+          h('div', { class: 'modal__pie' }, h('button', { type: 'button', class: 'boton', onclick: cerrarDlg }, icono('check'), 'Listo'))
+        )
+      );
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+      dlg.addEventListener('close', () => {
+        document.documentElement.classList.remove('modal-abierto');
+        dlg.remove();
+        contadorModal = null;
+        modalActivo = null;
+        refrescar();
+        botonAbrir?.focus({ preventScroll: true });
+      });
+      document.body.append(dlg);
+      document.documentElement.classList.add('modal-abierto');
+      modalActivo = dlg;
+      refrescar();
+      dlg.showModal();
     };
 
     function elegir(o) {
@@ -321,7 +357,7 @@ function vistaPregunta(enc) {
         respuestas[enc.id] = o.id;
         refrescar();
         if (o.otro) campoOtro?.focus();
-        else setTimeout(() => { if (respuestas[enc.id] === o.id && paso === encuestas.indexOf(enc)) { cerrar(); ir(1); } }, 320);
+        else if (modalActivo) modalActivo.close(); // solo cierra la ventana; no avanza de pregunta
         return;
       }
       let sel = seleccion(enc);
@@ -344,16 +380,19 @@ function vistaPregunta(enc) {
       ayuda.textContent = enc.tipo === 'unica' ? 'Elige 1 opción' : `Elige hasta ${enc.max} · ${sel.length}/${enc.max}`;
       if (etiquetaBoton) {
         const nombres = sel.map((id) => (id === 'otro' ? limpio(respuestas[OTRO(enc)]) || 'Otro' : enc.opciones.find((o) => o.id === id)?.label));
-        etiquetaBoton.textContent = nombres.length ? nombres.join(', ') : 'Toca para ver las opciones';
-        subBoton.textContent = enc.tipo === 'multiple' ? `${sel.length} de ${enc.max} elegidas` : 'Elige una';
+        const falta = sel.includes('otro') && !limpio(respuestas[OTRO(enc)]);
+        etiquetaBoton.textContent = nombres.length ? nombres.join(', ') : 'Toca para elegir';
+        subBoton.textContent = falta ? 'Falta escribir cuál en «Otro»'
+          : enc.tipo === 'multiple' ? `${sel.length} de ${enc.max} elegidas` : 'Toca para cambiar';
       }
+      if (contadorModal) contadorModal.textContent = enc.tipo === 'unica' ? 'Elige 1 opción' : `Elige hasta ${enc.max} · ${sel.length}/${enc.max}`;
       btnSig.disabled = !completa(enc);
     };
   }
 
   refrescar();
   return [
-    cabecera(enc.icono, enc.titulo, descripcionDe(enc)),
+    cabecera(enc.icono, enc.titulo, descripcionDe(enc), enc),
     ayuda,
     cuerpo,
     error ? h('p', { class: 'error', role: 'alert' }, error) : null,
