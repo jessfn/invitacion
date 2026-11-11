@@ -281,3 +281,23 @@ html.modal-abierto { overflow: hidden; }
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .reveal, .linea li, .hero__titulo .letra { opacity: 1 !important; transform: none !important; }
 }
+
+/* ---------- Portada de bienvenida (activa el sonido) ---------- */
+html.portada-abierta { overflow: hidden; }
+.portada { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; text-align: center;
+  background-image: linear-gradient(180deg, rgba(2, 48, 30, .9), rgba(2, 40, 26, .94)), url('../assets/fondo-navidad.svg');
+  background-size: cover; background-position: center bottom; transition: opacity .6s var(--ease), visibility .6s; }
+.portada.fuera { opacity: 0; visibility: hidden; pointer-events: none; }
+.portada__caja { display: grid; justify-items: center; gap: 10px; animation: sube-portada .8s var(--ease) both; }
+.portada__caja img { width: min(60vw, 240px); height: auto; filter: drop-shadow(0 14px 30px rgba(245, 183, 0, .3)); }
+.portada__sobre { letter-spacing: .36em; text-transform: uppercase; color: var(--oro); font-size: .72rem; font-weight: 600; }
+.portada h2 { font-size: clamp(1.7rem, 7vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; margin-bottom: 8px; }
+.portada small { color: var(--suave); font-size: .82rem; }
+@keyframes sube-portada { from { opacity: 0; transform: translateY(20px); } }
+
+.musica { position: fixed; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); z-index: 60; width: 46px; height: 46px; display: grid; place-items: center;
+  border-radius: 50%; border: 1px solid var(--borde); background: rgba(5, 34, 25, .92); color: var(--oro); cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, .4); transition: transform .2s var(--ease), border-color .2s; }
+.musica:hover { transform: scale(1.08); border-color: var(--oro); }
+.musica .ico { width: 22px; height: 22px; }
+.musica.apagada { color: var(--suave); }
+.musica[hidden] { display: none; }

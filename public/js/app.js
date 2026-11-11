@@ -1,5 +1,6 @@
 import { lanzarConfeti } from './fondo.js';
 import { obtenerHuella } from './huella.js';
+import * as musica from './musica.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -489,3 +490,27 @@ async function iniciar() {
 
 iniciarEfectos();
 iniciar();
+
+// ---------- portada y música ----------
+const portada = $('portada');
+const btnMusica = $('btnMusica');
+document.documentElement.classList.add('portada-abierta');
+btnMusica.hidden = true;
+
+function pintarBotonMusica(suena) {
+  btnMusica.classList.toggle('apagada', !suena);
+  btnMusica.setAttribute('aria-pressed', String(suena));
+  btnMusica.setAttribute('aria-label', suena ? 'Silenciar música' : 'Activar música');
+  btnMusica.querySelector('use').setAttribute('href', suena ? '#i-volume' : '#i-volume-off');
+}
+musica.alCambiar(pintarBotonMusica);
+btnMusica.addEventListener('click', () => musica.alternar());
+
+$('btnEntrar').addEventListener('click', async () => {
+  await musica.iniciar(); // el clic es el gesto que permite reproducir sonido
+  portada.classList.add('fuera');
+  document.documentElement.classList.remove('portada-abierta');
+  btnMusica.hidden = false;
+  setTimeout(() => portada.remove(), 700);
+});
+$('btnEntrar').focus({ preventScroll: true });
