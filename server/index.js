@@ -17,7 +17,7 @@ const MAX_POR_IP = Number(process.env.MAX_VOTOS_POR_IP ?? 15);
 const ESTRICTO = process.env.MODO_ESTRICTO !== '0';
 const MIN_SEGUNDOS = Number(process.env.MIN_SEGUNDOS ?? 6);
 
-const db = abrirDb(join(DATOS, 'votos.sqlite'));
+const db = await abrirDb({ url: process.env.DATABASE_URL, dirDatos: DATOS });
 const seg = crearSeguridad({
   secreto: cargarSecreto(join(DATOS, 'secreto.key')),
   confiarProxy: process.env.TRUST_PROXY === '1'
@@ -165,25 +165,6 @@ function validar(respuestas) {
   return { filas };
 }
 
-function resultadosPublicos(propias) {
-  const conteos = new Map();
-  for (const { pregunta, valor, n } of db.conteos()) conteos.set(`${pregunta}\u0000${valor}`, n);
-  const mias = new Set(propias.map((r) => `${r.pregunta}\u0000${r.valor}`));
-  const total = db.totalVotantes();
-  const preguntas = ENCUESTAS.filter((e) => e.opciones).map((e) => ({
-    id: e.id,
-    titulo: e.titulo,
-    icono: e.icono,
-    opciones: e.opciones
-      .map((o) => {
-        const clave = `${e.id}\u0000${o.id}`;
-        return { id: o.id, label: o.label, votos: conteos.get(clave) ?? 0, mio: mias.has(clave) };
-      })
-      .sort((a, b) => b.votos - a.votos)
-  }));
-  return { total, preguntas };
-}
-
 // Lo que ve el votante: solo sus propias elecciones, sin conteos ni porcentajes.
 function misRespuestas(propias) {
   const por = new Map();
@@ -204,6 +185,7 @@ function misRespuestas(propias) {
 }
 
 async function api(req, res, ruta) {
+  if (req.method === 'GET' && ruta === '/api/salud') return json(res, 200, { ok: true });
   if (ruta.startsWith('/api/admin/')) return admin.manejar(req, res, ruta);
   const id = identificar(req);
   const extra = id.setCookie ? { 'Set-Cookie': id.setCookie } : {};
@@ -218,13 +200,13 @@ async function api(req, res, ruta) {
 
   if (req.method === 'GET' && ruta === '/api/evento') {
     const catalogo = ENCUESTAS.map((e) => ({ ...e }));
-    return json(res, 200, { evento: EVENTO, encuestas: catalogo, yaVoto: Boolean(yaVoto()) }, extra);
+    return json(res, 200, { evento: EVENTO, encuestas: catalogo, yaVoto: Boolean(await yaVoto()) }, extra);
   }
 
   if (req.method === 'GET' && ruta === '/api/resultados') {
-    if (!yaVoto()) return json(res, 403, { error: 'Vota primero para ver los resultados.' }, extra);
-    const votanteId = db.votantePorDispositivo(id.dispositivo.id);
-    return json(res, 200, misRespuestas(votanteId ? db.respuestasDe(votanteId) : []), extra);
+    if (!(await yaVoto())) return json(res, 403, { error: 'Vota primero para ver los resultados.' }, extra);
+    const votanteId = await db.votantePorDispositivo(id.dispositivo.id);
+    return json(res, 200, misRespuestas(votanteId ? await db.respuestasDe(votanteId) : []), extra);
   }
 
   if (req.method === 'POST' && ruta === '/api/votar') {
@@ -249,7 +231,7 @@ async function api(req, res, ruta) {
     const { filas, error } = validar(cuerpo.respuestas);
     if (error) return json(res, 422, { error }, extra);
 
-    const r = db.registrarVoto({
+    const r = await db.registrarVoto({
       deviceId: id.dispositivo.id,
       huella: id.huella,
       ipHash: id.ipHash,
@@ -335,6 +317,6 @@ const servidor = createServer(async (req, res) => {
 });
 
 servidor.listen(PUERTO, () => {
-  console.log(`Invitación DGTIC 2026 lista en http://localhost:${PUERTO}`);
+  console.log(`Invitación DGTIC 2026 lista en http://localhost:${PUERTO} (base de datos: ${db.motor})`);
   console.log(admin.configurado ? `Panel de administración: http://localhost:${PUERTO}/admin` : 'Crea el administrador con: npm run admin:crear -- usuario clave');
 });

@@ -5,7 +5,8 @@ para votar el menú y la música. Cada celular solo puede participar una vez.
 
 ## Requisitos
 
-- Node.js 22.13 o superior (usa `node:sqlite`, no hay dependencias que instalar)
+- Node.js 22.13 o superior
+- PostgreSQL en producción. En desarrollo no hace falta: sin `DATABASE_URL` se usa PGlite (PostgreSQL embebido, datos en `data/pgdata`)
 
 ## Uso
 
@@ -20,6 +21,7 @@ Abre `http://localhost:3000`. Para verlo desde otro celular en la misma red usa 
 | Variable | Por defecto | Descripción |
 | --- | --- | --- |
 | `PORT` | `3000` | Puerto del servidor |
+| `DATABASE_URL` | _(vacía)_ | Conexión a PostgreSQL, p. ej. `postgres://usuario:clave@127.0.0.1:5432/invitaciondgtic` |
 | `ADMIN_USER` / `ADMIN_PASS` | _(vacías)_ | Credenciales del panel (alternativa a `npm run admin:crear`, útil en hosting) |
 | `MAX_VOTOS_POR_IP` | `15` | Tope de participaciones desde una misma red |
 | `MODO_ESTRICTO` | `1` | `0` desactiva el bloqueo por huella + IP |
@@ -43,6 +45,24 @@ npm run admin:crear -- usuario contraseña
 En un servidor de producción ejecuta ese comando allí mismo, o define `ADMIN_USER` y `ADMIN_PASS`.
 El acceso está limitado a 8 intentos cada 15 minutos por red y la sesión dura 8 horas.
 
+## Despliegue en el VPS
+
+Producción: `https://fiestatic.minvitacion.cloud` (Nginx + HTTPS, servicio systemd, base `invitaciondgtic` en PostgreSQL).
+Primera instalación, como root en el VPS (pide las contraseñas por teclado, no se guardan en git):
+
+```bash
+git clone https://github.com/jessfn/invitacion.git /opt/invitacion
+bash /opt/invitacion/deploy/instalar.sh
+```
+
+Después de cada `git push`, en el VPS:
+
+```bash
+bash /opt/invitacion/deploy/actualizar.sh
+```
+
+Los datos (votos) viven en PostgreSQL y los secretos en `/etc/invitacion.env` y `/opt/invitacion/data`; ninguno se toca al actualizar.
+
 ## Personalizar
 
 Fecha, lugar, programa, menú y preguntas están en [`server/datos.js`](server/datos.js).
@@ -58,7 +78,7 @@ Ningún método es infalible sin una cuenta de usuario, por eso se combinan vari
    Si alguien borra las cookies o abre una pestaña privada, la huella + IP lo delata.
 3. **Tope por IP** para frenar scripts desde una misma red.
 4. La IP se guarda solo como hash irreversible.
-5. Validación estricta en el servidor, transacción en SQLite, límite de peticiones,
+5. Validación estricta en el servidor, transacción en PostgreSQL con candado, límite de peticiones,
    tiempo mínimo, campo trampa para bots y cabeceras de seguridad (CSP, etc.).
 
 Limitaciones conocidas: dos celulares idénticos (mismo modelo y versión) en la misma red Wi-Fi
@@ -68,7 +88,7 @@ comparten IP, por eso el tope por IP es alto.
 ## Estructura
 
 ```
-server/     API, base de datos SQLite y seguridad
+server/     API, base de datos PostgreSQL y seguridad
 public/     Invitación (HTML, CSS, JS y canvas)
 data/       Base de datos y secreto (se crea sola, no se sube a git)
 ```

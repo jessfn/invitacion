@@ -73,10 +73,10 @@ export function crearAdmin({ db, seg, json, leerCuerpo, cabeceras, rutaCredencia
     return { filtros, desde: Number.isFinite(desde) && desde > 0 ? desde : 0 };
   }
 
-  function datos(url) {
+  async function datos(url) {
     const { filtros, desde } = filtrosDe(url);
-    const filtrado = db.panel(filtros, desde);
-    const global = db.panel([], 0);
+    const filtrado = await db.panel(filtros, desde);
+    const global = await db.panel([], 0);
     const mapa = new Map(filtrado.conteos.map((c) => [`${c.pregunta}\u0001${c.valor}`, c.n]));
     const preguntas = ENCUESTAS.filter((e) => e.opciones).map((e) => ({
       id: e.id,
@@ -146,7 +146,7 @@ export function crearAdmin({ db, seg, json, leerCuerpo, cabeceras, rutaCredencia
     }
 
     if (req.method === 'GET' && ruta === '/api/admin/datos') {
-      return json(res, 200, datos(url), headers);
+      return json(res, 200, await datos(url), headers);
     }
 
     if (req.method === 'GET' && ruta === '/api/admin/stream') {
