@@ -30,7 +30,7 @@ h1, h2, h3, h4, p, ul, ol { margin: 0; padding: 0; }
 /* ---------- Fondo (capas fijas y baratas) ---------- */
 .aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-color: var(--noche);
   background-image:
-    linear-gradient(180deg, rgba(2, 38, 26, .72) 0%, rgba(3, 42, 29, .6) 45%, rgba(2, 30, 21, .82) 100%),
+    linear-gradient(180deg, rgba(2, 38, 26, .66) 0%, rgba(3, 44, 30, .5) 50%, rgba(2, 34, 24, .58) 100%),
     url('../assets/fondo-navidad.svg');
   background-size: cover; background-position: center bottom; }
 .aurora i { display: none; }
