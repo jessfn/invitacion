@@ -29,9 +29,9 @@ let maestro = null;
 let reverb = null;
 let ruido = null;
 let temporizador = null;
-let finProgramado = 0;
+let proximoInicio = 0;
+let indice = 0;
 let sonando = false;
-let pausadoPorPestana = false;
 const oyentes = new Set();
 
 function impulso(c, segundos = 1.8) {
@@ -101,38 +101,34 @@ function cascabel(t, vol) {
   fuente.start(t, Math.random() * 0.5, 0.12);
 }
 
-function programar() {
-  let t = ctx.currentTime + 0.15;
-  for (const { notas, bpm, octava = 1 } of CANCIONES) {
-    const tiempo = 60 / bpm;
-    let acumulado = 0;
-    for (const token of notas.split(' ')) {
-      const [nota, d] = token.split('/');
-      const dur = Number(d) * tiempo;
-      const f = frecuencia(nota) * octava;
-      const inicio = t + acumulado;
-      campana(f, inicio, dur, 0.5);
-      campana(f * 2, inicio, dur, 0.18); // brillo
-      campana(f / 2, inicio, dur, 0.16); // cuerpo
-      acumulado += dur;
-    }
-    // Cascabeles cada medio tiempo durante toda la canción
-    for (let k = 0; k * (tiempo / 2) < acumulado; k++) cascabel(t + k * (tiempo / 2), k % 2 ? 0.1 : 0.2);
-    t += acumulado + 0.8;
+// Agenda una canción completa desde t0 y devuelve su duración en segundos.
+function programarCancion({ notas, bpm, octava = 1 }, t0) {
+  const tiempo = 60 / bpm;
+  let acumulado = 0;
+  for (const token of notas.split(' ')) {
+    const [nota, d] = token.split('/');
+    const dur = Number(d) * tiempo;
+    const f = frecuencia(nota) * octava;
+    const inicio = t0 + acumulado;
+    campana(f, inicio, dur, 0.5);
+    campana(f * 2, inicio, dur, 0.18); // brillo
+    campana(f / 2, inicio, dur, 0.16); // cuerpo
+    acumulado += dur;
   }
-  finProgramado = t;
-  vigilar();
+  // Cascabeles cada medio tiempo durante toda la canción
+  for (let k = 0; k * (tiempo / 2) < acumulado; k++) cascabel(t0 + k * (tiempo / 2), k % 2 ? 0.1 : 0.2);
+  return acumulado + 0.6;
 }
 
-// El contexto de audio se detiene al pausar, así que se vigila su propio reloj
-// (y no el del navegador) para saber cuándo repetir la lista.
-function vigilar() {
-  clearTimeout(temporizador);
-  temporizador = setTimeout(() => {
-    if (!ctx) return;
-    if (ctx.state === 'running' && ctx.currentTime >= finProgramado - 1.5) programar();
-    else vigilar();
-  }, 1000);
+// Programador sin fin: mantiene siempre ~14 segundos de música agendados por delante,
+// así que la lista se repite una y otra vez y nunca se acaba.
+function tic() {
+  if (!ctx || ctx.state !== 'running' || !sonando) return;
+  if (!proximoInicio) proximoInicio = ctx.currentTime + 0.15;
+  while (proximoInicio < ctx.currentTime + 14) {
+    proximoInicio += programarCancion(CANCIONES[indice % CANCIONES.length], proximoInicio);
+    indice++;
+  }
 }
 
 function avisar() {
@@ -147,10 +143,10 @@ export async function iniciar() {
   try {
     preparar();
     await ctx.resume();
-    if (!sonando) {
-      sonando = true;
-      if (!finProgramado) programar();
-    }
+    sonando = true;
+    tic();
+    clearInterval(temporizador);
+    temporizador = setInterval(tic, 500);
   } catch {
     sonando = false;
   }
@@ -164,14 +160,10 @@ export async function alternar() {
   avisar();
 }
 
-// Cortesía: se pausa si el usuario cambia de pestaña y se reanuda al volver.
-document.addEventListener('visibilitychange', async () => {
-  if (!ctx) return;
-  if (document.hidden && sonando) {
-    pausadoPorPestana = true;
-    await ctx.suspend();
-  } else if (!document.hidden && pausadoPorPestana) {
-    pausadoPorPestana = false;
-    if (sonando) await ctx.resume();
-  }
-});
+// La música no se detiene sola: si el sistema la interrumpe (llamada, bloqueo, otra pestaña),
+// se reanuda al volver o con el siguiente toque.
+const reanudar = () => {
+  if (ctx && sonando && ctx.state !== 'running') ctx.resume().catch(() => {});
+};
+document.addEventListener('visibilitychange', () => { if (!document.hidden) reanudar(); });
+document.addEventListener('pointerdown', reanudar, true);

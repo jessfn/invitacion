@@ -50,12 +50,17 @@ function pintarEvento(ev) {
   const hora = fecha ? new Intl.DateTimeFormat('es-MX', { timeStyle: 'short' }).format(fecha) : '';
   $('fechaTexto').textContent = fecha ? `${larga} · ${ev.lugar}` : `${ev.lugar} · fecha por confirmar`;
   $('det-fecha').textContent = fecha ? `${larga} · ${hora}` : 'Por confirmar';
-  $('det-lugar').textContent = ev.direccion ? `${ev.lugar} — ${ev.direccion}` : ev.lugar;
+  $('det-lugar').textContent = ev.lugar;
+  $('det-direccion').textContent = ev.direccion ?? '';
   $('det-recepcion').textContent = ev.recepcion;
   if (ev.mapa && /^https:\/\//.test(ev.mapa)) {
     const a = $('det-mapa');
     a.href = ev.mapa;
     a.hidden = false;
+    // El nombre y la dirección también llevan al mapa al tocarlos.
+    const lugar = $('det-lugar');
+    lugar.replaceChildren(h('a', { href: ev.mapa, target: '_blank', rel: 'noopener noreferrer', class: 'enlace-lugar' }, ev.lugar));
+    $('det-direccion').replaceChildren(h('a', { href: ev.mapa, target: '_blank', rel: 'noopener noreferrer', class: 'enlace-dir' }, ev.direccion ?? ''));
   }
   $('lista-incluye').replaceChildren(...ev.incluye.map((t) => h('li', {}, t)));
   $('linea').replaceChildren(

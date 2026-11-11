@@ -8,8 +8,8 @@ export const EVENTO = {
   // (Viernes 4 de diciembre de 2026, 3:00 pm). Si se deja en null se muestra "Fecha por confirmar" y se oculta la cuenta regresiva.
   fecha: '2026-12-04T15:00:00-06:00',
   lugar: 'CENSODEP',
-  direccion: '',
-  mapa: '',
+  direccion: 'Av. Sta. Ana 750, San Francisco Culhuacan, Ex-Ejido de San Francisco Culhuacan, Coyoacán, 04470 Ciudad de México, CDMX',
+  mapa: 'https://www.google.com/maps/search/?api=1&query=Av.%20Sta.%20Ana%20750%2C%20San%20Francisco%20Culhuacan%2C%20Ex-Ejido%20de%20San%20Francisco%20Culhuacan%2C%20Coyoac%C3%A1n%2C%2004470%20Ciudad%20de%20M%C3%A9xico%2C%20CDMX',
   recepcion: '3:00 pm',
   incluye: [
     'Pan',
@@ -27,8 +27,8 @@ export const EVENTO = {
     { hora: '5:00 pm', titulo: 'Cabina fotográfica', icono: 'camera', texto: 'Horario por confirmar.' },
     { hora: '7:00 pm', titulo: 'Dinámicas', icono: 'sparkles', texto: 'Juegos y convivencia.' },
     { hora: '8:00 pm', titulo: 'Rifa', icono: 'gift', texto: 'Mucha suerte a todos.' },
-    { hora: '9:00 pm', titulo: 'Karaoke', icono: 'mic', texto: 'Saca la estrella que llevas dentro.' },
-    { hora: '11:30 pm', titulo: 'Batucada', icono: 'drum', texto: 'Con entrada de Pikachu y robot LED.' },
+    { hora: '9:00 pm', titulo: 'Batucada', icono: 'drum', texto: 'Con entrada de Pikachu y robot LED.' },
+    { hora: '10:30 pm', titulo: 'Karaoke', icono: 'mic', texto: 'Saca la estrella que llevas dentro.' },
     { hora: '12:30 am', titulo: 'Salida', icono: 'door', texto: 'Hasta la próxima, equipo.' }
   ]
 };

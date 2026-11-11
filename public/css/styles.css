@@ -301,3 +301,13 @@ html.portada-abierta { overflow: hidden; }
 .musica .ico { width: 22px; height: 22px; }
 .musica.apagada { color: var(--suave); }
 .musica[hidden] { display: none; }
+
+/* Ubicación con enlace al mapa */
+.tile__dir { color: var(--suave); font-size: .85rem; line-height: 1.4; margin-top: 4px; overflow-wrap: anywhere; }
+.enlace-lugar { color: inherit; text-decoration: none; border-bottom: 2px solid rgba(255, 212, 90, .6); transition: color .2s, border-color .2s; }
+.enlace-lugar:hover { color: var(--oro); border-color: var(--oro); }
+.enlace-dir { color: inherit; text-decoration: underline; text-decoration-color: rgba(255, 212, 90, .5); text-underline-offset: 3px; }
+.enlace-dir:hover { color: var(--oro); }
+.tile--lugar .enlace { display: inline-flex; align-items: center; margin-top: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(255, 212, 90, .12); border: 1px solid rgba(255, 212, 90, .4); font-weight: 600; text-decoration: none; }
+.tile--lugar .enlace:hover { background: var(--oro); color: #1b1300; }
+.tile--lugar .enlace[hidden] { display: none; }
