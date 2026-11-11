@@ -183,7 +183,8 @@ function construirKpis() {
     ['fuerte', 'Plato fuerte favorito', 'utensils'],
     ['baile', 'Género #1 para bailar', 'music'],
     ['canciones', 'Canciones pedidas', 'disc'],
-    ['ultima', 'Última respuesta', 'clock']
+    ['ultima', 'Última respuesta', 'clock'],
+    ['bloqueos', 'Votos duplicados bloqueados', 'shield']
   ];
   kpis = {};
   $('kpis').replaceChildren(...def.map(([id, titulo, ic, principal]) => {
@@ -227,6 +228,12 @@ function pintarKpis(d) {
   const canc = d.textos.find((t) => t.id === 'cancion')?.respuestas ?? [];
   contar(kpis.canciones.v, canc.reduce((a, c) => a + c.n, 0));
   kpis.canciones.sub.textContent = `${canc.length} distintas`;
+  const bl = d.bloqueos ?? {};
+  const totalBl = Object.values(bl).reduce((a, n) => a + n, 0);
+  contar(kpis.bloqueos.v, totalBl);
+  kpis.bloqueos.sub.textContent = totalBl
+    ? `Mismo teléfono: ${bl.dispositivo ?? 0} · misma huella: ${bl.huella ?? 0} · red: ${bl.ip ?? 0}`
+    : 'Nadie ha intentado votar dos veces';
   const ult = d.tiempos.at(-1);
   kpis.ultima.v.className = 'kpi__v texto';
   kpis.ultima.v.textContent = ult ? hace(ult) : '—';

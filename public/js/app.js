@@ -28,6 +28,12 @@ function h(tag, attrs = {}, ...hijos) {
   return el;
 }
 
+// Respaldo de la identidad del dispositivo: si alguien borra solo las cookies, este token firmado
+// (que entregó el servidor) permite reconocer el mismo teléfono.
+const CLAVE_TOKEN = 'dgtic2026:dispositivo';
+const leerToken = () => { try { return localStorage.getItem(CLAVE_TOKEN); } catch { return null; } };
+const guardarToken = (t) => { try { if (t) localStorage.setItem(CLAVE_TOKEN, t); } catch { /* modo privado */ } };
+
 const vibrar = (ms = 10) => navigator.vibrate?.(ms);
 const limpio = (t) => (typeof t === 'string' ? t.replace(/\s+/g, ' ').trim() : '');
 
@@ -36,7 +42,11 @@ async function pedir(ruta, opciones = {}) {
   const res = await fetch(ruta, {
     credentials: 'same-origin',
     ...opciones,
-    headers: { 'X-Huella': huella, ...(opciones.body ? { 'Content-Type': 'application/json' } : {}) }
+    headers: {
+      'X-Huella': huella,
+      ...(leerToken() ? { 'X-Dispositivo': leerToken() } : {}),
+      ...(opciones.body ? { 'Content-Type': 'application/json' } : {})
+    }
   });
   const datos = await res.json().catch(() => ({}));
   if (!res.ok) throw Object.assign(new Error(datos.error ?? 'Error de red'), { estado: res.status, datos });
@@ -518,6 +528,8 @@ async function mostrarResultados(recienVotado) {
 async function iniciar() {
   try {
     const datos = await pedir('/api/evento');
+    // Solo se guarda el token la primera vez: así nunca se reemplaza la identidad ya reconocida.
+    if (!leerToken()) guardarToken(datos.token);
     pintarEvento(datos.evento);
     encuestas = datos.encuestas;
     if (datos.yaVoto) await mostrarResultados(false);

@@ -44,26 +44,39 @@ export function crearSeguridad({ secreto, confiarProxy }) {
     return out;
   }
 
-  // Cookie: <id>.<timestamp>.<firma>
-  function leerDispositivo(req) {
-    const valor = leerCookies(req)[COOKIE];
-    if (!valor) return null;
+  // Identidad del dispositivo: <id>.<timestamp>.<firma>. Viaja en una cookie y, como respaldo,
+  // en la cabecera X-Dispositivo (el navegador la guarda también en localStorage). Si alguien borra
+  // solo las cookies, el servidor lo reconoce igual por esa cabecera, porque la firma no se puede falsificar.
+  const FORMATO = /^[a-f0-9]{32}\.\d{10,16}\.[A-Za-z0-9_-]{43}$/;
+  function parsear(valor) {
+    if (typeof valor !== 'string' || !FORMATO.test(valor)) return null;
     const [id, ts, firma] = valor.split('.');
-    if (!id || !ts || !firma) return null;
     if (!iguales(firma, firmar(`${id}.${ts}`))) return null;
-    return { id, desde: Number(ts) };
+    return { id, desde: Number(ts), valor };
+  }
+
+  function leerDispositivo(req) {
+    const c = parsear(leerCookies(req)[COOKIE]);
+    if (c) return { ...c, origen: 'cookie' };
+    const h = parsear(req.headers['x-dispositivo']);
+    if (h) return { ...h, origen: 'cabecera' };
+    return null;
+  }
+
+  function cookieDe(valor, esHttps) {
+    const attrs = [`${COOKIE}=${valor}`, 'Path=/', 'HttpOnly', 'SameSite=Strict', `Max-Age=${UN_ANIO}`];
+    if (esHttps) attrs.push('Secure');
+    return attrs.join('; ');
   }
 
   function nuevaCookie(esHttps) {
     const id = randomBytes(16).toString('hex');
     const ts = Date.now();
     const valor = `${id}.${ts}.${firmar(`${id}.${ts}`)}`;
-    const attrs = [`${COOKIE}=${valor}`, 'Path=/', 'HttpOnly', 'SameSite=Strict', `Max-Age=${UN_ANIO}`];
-    if (esHttps) attrs.push('Secure');
-    return { id, desde: ts, header: attrs.join('; ') };
+    return { id, desde: ts, valor, header: cookieDe(valor, esHttps) };
   }
 
-  return { hashIp, ipDe, leerDispositivo, nuevaCookie, firmar, iguales, leerCookies };
+  return { hashIp, ipDe, leerDispositivo, nuevaCookie, cookieDe, firmar, iguales, leerCookies };
 }
 
 // Limitador sencillo en memoria: ventana deslizante por clave.

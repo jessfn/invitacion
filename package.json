@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "admin:crear": "node server/crear-admin.js"
+    "admin:crear": "node server/crear-admin.js",
+    "prueba:voto": "node pruebas/voto-unico.mjs"
   },
   "engines": {
     "node": ">=22.13"

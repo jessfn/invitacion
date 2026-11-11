@@ -77,6 +77,7 @@ export function crearAdmin({ db, seg, json, leerCuerpo, cabeceras, rutaCredencia
     const { filtros, desde } = filtrosDe(url);
     const filtrado = await db.panel(filtros, desde);
     const global = await db.panel([], 0);
+    const bloqueos = await db.bloqueos();
     const mapa = new Map(filtrado.conteos.map((c) => [`${c.pregunta}\u0001${c.valor}`, c.n]));
     const preguntas = ENCUESTAS.filter((e) => e.opciones).map((e) => ({
       id: e.id,
@@ -104,6 +105,7 @@ export function crearAdmin({ db, seg, json, leerCuerpo, cabeceras, rutaCredencia
     return {
       total: filtrado.total,
       totalGlobal: global.total,
+      bloqueos,
       filtros: filtros.map(([p, v]) => ({ pregunta: p, valor: v })),
       preguntas,
       textos,

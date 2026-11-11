@@ -57,6 +57,11 @@ const ESQUEMA = `
   );
   CREATE INDEX IF NOT EXISTS idx_respuestas_votante ON respuestas (votante_id);
   CREATE INDEX IF NOT EXISTS idx_respuestas_pregunta ON respuestas (pregunta, valor);
+
+  CREATE TABLE IF NOT EXISTS bloqueos (
+    creado BIGINT NOT NULL,
+    motivo TEXT   NOT NULL
+  );
 `;
 
 export async function abrirDb({ url, dirDatos }) {
@@ -73,28 +78,45 @@ export async function abrirDb({ url, dirDatos }) {
   return {
     motor: bd.motor,
 
-    async buscarVoto({ deviceId, huella, ipHash }) {
-      if (deviceId && (await uno('SELECT id FROM votantes WHERE device_id = $1', [deviceId]))) return 'dispositivo';
-      if (huella && (await uno('SELECT id FROM votantes WHERE huella = $1 AND ip_hash = $2', [huella, ipHash]))) return 'huella';
+    // Devuelve { motivo, id } del voto previo de este dispositivo, o null.
+    // Orden: identidad firmada (cookie o localStorage) -> huella del dispositivo (+ red).
+    async buscarVoto({ deviceId, huella, ipHash, huellaSola = false }) {
+      if (deviceId) {
+        const r = await uno('SELECT id FROM votantes WHERE device_id = $1', [deviceId]);
+        if (r) return { motivo: 'dispositivo', id: r.id };
+      }
+      if (huella) {
+        const r = huellaSola
+          ? await uno('SELECT id FROM votantes WHERE huella = $1 ORDER BY id LIMIT 1', [huella])
+          : await uno('SELECT id FROM votantes WHERE huella = $1 AND ip_hash = $2 ORDER BY id LIMIT 1', [huella, ipHash]);
+        if (r) return { motivo: 'huella', id: r.id };
+      }
       return null;
     },
 
-    async votantePorDispositivo(deviceId) {
-      const r = await uno('SELECT id FROM votantes WHERE device_id = $1', [deviceId]);
-      return r ? r.id : null;
+    async registrarBloqueo(motivo) {
+      await bd.consulta('INSERT INTO bloqueos (creado, motivo) VALUES ($1, $2)', [Date.now(), motivo]);
+    },
+
+    async bloqueos() {
+      const filas = (await bd.consulta('SELECT motivo, COUNT(*)::int AS n FROM bloqueos GROUP BY motivo')).rows;
+      return Object.fromEntries(filas.map((f) => [f.motivo, Number(f.n)]));
     },
 
     // Inserta el voto y sus respuestas en una transacción. El candado asesor serializa
     // los votos, así las comprobaciones de duplicados no pueden competir entre sí.
-    async registrarVoto({ deviceId, huella, ipHash, filas, maxPorIp, estricto }) {
+    async registrarVoto({ deviceId, huella, ipHash, filas, maxPorIp, estricto, huellaSola = false }) {
       try {
         return await bd.transaccion(async (q) => {
           await q('SELECT pg_advisory_xact_lock(7102027)');
           if ((await q('SELECT 1 FROM votantes WHERE device_id = $1', [deviceId])).rows.length) {
             return { ok: false, motivo: 'dispositivo' };
           }
-          if (estricto && (await q('SELECT 1 FROM votantes WHERE huella = $1 AND ip_hash = $2', [huella, ipHash])).rows.length) {
-            return { ok: false, motivo: 'huella' };
+          if (estricto) {
+            const previa = huellaSola
+              ? await q('SELECT 1 FROM votantes WHERE huella = $1 LIMIT 1', [huella])
+              : await q('SELECT 1 FROM votantes WHERE huella = $1 AND ip_hash = $2 LIMIT 1', [huella, ipHash]);
+            if (previa.rows.length) return { ok: false, motivo: 'huella' };
           }
           const { rows } = await q('SELECT COUNT(*)::int AS n FROM votantes WHERE ip_hash = $1', [ipHash]);
           if (Number(rows[0].n) >= maxPorIp) return { ok: false, motivo: 'ip' };

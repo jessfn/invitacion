@@ -13,8 +13,13 @@ const PUBLICO = join(RAIZ, 'public');
 const DATOS = join(RAIZ, 'data');
 
 const PUERTO = Number(process.env.PORT ?? 3000);
-const MAX_POR_IP = Number(process.env.MAX_VOTOS_POR_IP ?? 15);
+// Una red de oficina o de evento comparte una sola IP entre muchas personas: los topes por IP son
+// solo un freno contra scripts, no el control principal (ese es el dispositivo).
+const MAX_POR_IP = Number(process.env.MAX_VOTOS_POR_IP ?? 400);
 const ESTRICTO = process.env.MODO_ESTRICTO !== '0';
+// 1 = una misma huella de dispositivo bloquea el voto desde cualquier red (más estricto, pero dos
+// teléfonos idénticos podrían confundirse). 0 = la huella solo cuenta junto con la misma red.
+const HUELLA_SOLA = process.env.HUELLA_SOLA === '1';
 const MIN_SEGUNDOS = Number(process.env.MIN_SEGUNDOS ?? 6);
 
 const db = await abrirDb({ url: process.env.DATABASE_URL, dirDatos: DATOS });
@@ -22,8 +27,10 @@ const seg = crearSeguridad({
   secreto: cargarSecreto(join(DATOS, 'secreto.key')),
   confiarProxy: process.env.TRUST_PROXY === '1'
 });
-const limitaApi = crearLimitador({ ventanaMs: 60_000, maximo: 90 });
-const limitaVoto = crearLimitador({ ventanaMs: 10 * 60_000, maximo: 8 });
+const limitaApi = crearLimitador({ ventanaMs: 60_000, maximo: 1200 });
+const limitaVoto = crearLimitador({ ventanaMs: 10 * 60_000, maximo: 150 });
+// Intentos de voto por dispositivo (cookie o token): frena a quien insiste con el mismo teléfono.
+const limitaDispositivo = crearLimitador({ ventanaMs: 10 * 60_000, maximo: 12 });
 
 let admin;
 const MIME = {
@@ -86,23 +93,28 @@ function leerCuerpo(req, limite = 8 * 1024) {
 const esHttps = (req) => req.headers['x-forwarded-proto'] === 'https' || Boolean(req.socket.encrypted);
 const HUELLA_OK = /^[a-f0-9]{16,64}$/;
 
-// Identifica al visitante y, si no trae cookie válida, le entrega una nueva.
+// Identifica al visitante: cookie firmada o, si la borró, el token firmado que guarda el navegador.
 function identificar(req) {
   const ip = seg.ipDe(req);
   const huella = String(req.headers['x-huella'] ?? '').toLowerCase();
   let dispositivo = seg.leerDispositivo(req);
   let setCookie;
+  let nuevo = false;
   if (!dispositivo) {
     const nueva = seg.nuevaCookie(esHttps(req));
-    dispositivo = { id: nueva.id, desde: nueva.desde };
+    dispositivo = { id: nueva.id, desde: nueva.desde, valor: nueva.valor, origen: 'nueva' };
     setCookie = nueva.header;
+    nuevo = true;
+  } else if (dispositivo.origen === 'cabecera') {
+    setCookie = seg.cookieDe(dispositivo.valor, esHttps(req)); // se restituye la cookie borrada
   }
   return {
     ip,
     ipHash: seg.hashIp(ip),
     huella: HUELLA_OK.test(huella) ? huella : null,
     dispositivo,
-    setCookie
+    setCookie,
+    nuevo
   };
 }
 
@@ -196,22 +208,25 @@ async function api(req, res, ruta) {
     db.buscarVoto({
       deviceId: id.dispositivo.id,
       huella: ESTRICTO ? id.huella : null,
-      ipHash: id.ipHash
+      ipHash: id.ipHash,
+      huellaSola: HUELLA_SOLA
     });
 
   if (req.method === 'GET' && ruta === '/api/evento') {
     const catalogo = ENCUESTAS.map((e) => ({ ...e }));
-    return json(res, 200, { evento: EVENTO, encuestas: catalogo, yaVoto: Boolean(await yaVoto()) }, extra);
+    return json(res, 200, { evento: EVENTO, encuestas: catalogo, yaVoto: Boolean(await yaVoto()), token: id.dispositivo.valor }, extra);
   }
 
   if (req.method === 'GET' && ruta === '/api/resultados') {
-    if (!(await yaVoto())) return json(res, 403, { error: 'Vota primero para ver los resultados.' }, extra);
-    const votanteId = await db.votantePorDispositivo(id.dispositivo.id);
-    return json(res, 200, misRespuestas(votanteId ? await db.respuestasDe(votanteId) : []), extra);
+    const previo = await yaVoto();
+    if (!previo) return json(res, 403, { error: 'Vota primero para ver los resultados.' }, extra);
+    return json(res, 200, misRespuestas(await db.respuestasDe(previo.id)), extra);
   }
 
   if (req.method === 'POST' && ruta === '/api/votar') {
-    if (!limitaVoto(id.ipHash)) return json(res, 429, { error: 'Demasiados intentos. Espera unos minutos.' }, extra);
+    if (!limitaVoto(id.ipHash) || !limitaDispositivo(id.dispositivo.id)) {
+      return json(res, 429, { error: 'Demasiados intentos. Espera unos minutos.' }, extra);
+    }
     if (!/^application\/json/.test(req.headers['content-type'] ?? '')) {
       return json(res, 415, { error: 'Tipo de contenido no soportado.' }, extra);
     }
@@ -225,7 +240,7 @@ async function api(req, res, ruta) {
     if (cuerpo.sitio) return json(res, 400, { error: 'Solicitud rechazada.' }, extra);
     if (!id.huella) return json(res, 400, { error: 'No se pudo verificar tu dispositivo.' }, extra);
     // Debe haber cargado la invitación antes (cookie con sello de tiempo del servidor).
-    if (id.setCookie || Date.now() - id.dispositivo.desde < MIN_SEGUNDOS * 1000) {
+    if (id.nuevo || Date.now() - id.dispositivo.desde < MIN_SEGUNDOS * 1000) {
       return json(res, 400, { error: 'Lee la invitación y responde con calma, intenta de nuevo.' }, extra);
     }
 
@@ -238,9 +253,12 @@ async function api(req, res, ruta) {
       ipHash: id.ipHash,
       filas,
       maxPorIp: MAX_POR_IP,
-      estricto: ESTRICTO
+      estricto: ESTRICTO,
+      huellaSola: HUELLA_SOLA
     });
     if (!r.ok) {
+      await db.registrarBloqueo(r.motivo).catch(() => {});
+      admin.notificar();
       const msg =
         r.motivo === 'ip'
           ? 'Se alcanzó el límite de votos desde esta red.'
