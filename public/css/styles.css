@@ -79,7 +79,14 @@ main, .pie, .barra { position: relative; z-index: 2; }
 
 /* ---------- Hero ---------- */
 .hero { max-width: 1040px; margin: 0 auto; padding: 28px var(--gutter) 40px; display: grid; justify-items: center; align-content: center; gap: 14px; text-align: center; min-height: calc(100svh - 100px); }
-.hero__logo { width: min(62vw, 290px); filter: drop-shadow(0 14px 30px rgba(245, 183, 0, .3)); animation: flota 6s ease-in-out infinite; }
+.hero__marco { position: relative; width: min(62vw, 290px); }
+.hero__logo { width: 100%; filter: drop-shadow(0 14px 30px rgba(245, 183, 0, .3)); animation: logoEntra 1s var(--ease) both; }
+.hero__marco::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, .85) 50%, transparent 60%) 220% 0 / 250% 100% no-repeat;
+  -webkit-mask: url('../assets/logo.webp') center / contain no-repeat; mask: url('../assets/logo.webp') center / contain no-repeat;
+  animation: logoBrillo 9s 1.4s ease-in-out infinite; }
+@keyframes logoEntra { from { opacity: 0; transform: scale(.88); } }
+@keyframes logoBrillo { 0% { background-position: 220% 0; } 14%, 100% { background-position: -120% 0; } }
 .hero__texto { display: grid; justify-items: center; gap: 10px; min-width: 0; }
 .hero__sobre { letter-spacing: .36em; text-transform: uppercase; color: var(--oro); font-size: .72rem; font-weight: 600; }
 .hero__titulo { font-weight: 800; font-size: clamp(1.9rem, 7vw, 3.1rem); line-height: 1.05; letter-spacing: -.03em; max-width: 16ch; text-wrap: balance; }
@@ -90,7 +97,7 @@ main, .pie, .barra { position: relative; z-index: 2; }
 .hero__fecha { color: var(--suave); font-size: .98rem; }
 @media (min-width: 900px) {
   .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); justify-items: stretch; align-items: center; text-align: left; gap: clamp(24px, 5vw, 64px); min-height: calc(100svh - 110px); }
-  .hero__logo { width: min(100%, 400px); justify-self: center; }
+  .hero__marco { width: min(100%, 400px); justify-self: center; }
   .hero__texto { justify-items: start; gap: 14px; }
 }
 @keyframes flota { 50% { transform: translateY(-8px); } }
