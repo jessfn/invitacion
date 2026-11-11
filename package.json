@@ -1,0 +1,15 @@
+{
+  "name": "invitacion-dgtic-2026",
+  "version": "1.0.0",
+  "description": "Invitación web y encuestas de la Fiesta de Fin de Año DGTIC 2026",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "license": "MIT"
+}

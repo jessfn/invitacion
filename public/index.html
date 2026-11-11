@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a1020">
+  <title>Fiesta de Fin de Año DGTIC 2026</title>
+  <meta name="description" content="Estás invitado a la Fiesta de Fin de Año DGTIC 2026. Vota tu menú y tu música favorita.">
+  <link rel="icon" href="assets/logo.webp" type="image/webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Iconos -->
+  <svg class="sprite" width="0" height="0" aria-hidden="true">
+    <defs>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+      <symbol id="i-utensils" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></symbol>
+      <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8zM5 3l.6 1.4L7 5l-1.4.6L5 7l-.6-1.4L3 5l1.4-.6z"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+      <symbol id="i-door" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+      <symbol id="i-drum" viewBox="0 0 24 24"><ellipse cx="12" cy="8" rx="9" ry="4"/><path d="M3 8v8c0 2.2 4 4 9 4s9-1.8 9-4V8M8 12.5v7M16 12.5v7M12 13v7M3 2l5 4M21 2l-5 4"/></symbol>
+      <symbol id="i-glass" viewBox="0 0 24 24"><path d="M8 22h8M12 15v7M5 3h14l-1.5 7a5.5 5.5 0 0 1-11 0z"/></symbol>
+      <symbol id="i-soup" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9ZM7 21h10M11 3c-1 1.5 1 2.5 0 4M15 3c-1 1.5 1 2.5 0 4"/></symbol>
+      <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.5 6-7"/></symbol>
+      <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 16a2 2 0 0 1-2 2h-1v-6h3zM3 16a2 2 0 0 0 2 2h1v-6H3z"/></symbol>
+      <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
+      <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-arrow-l" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></symbol>
+      <symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="m12 5 7 7-7 7M5 12h14"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 15v3M12 9v9M17 5v13"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3 6.9 7.5.7-5.7 5 1.7 7.4L12 18l-6.5 4 1.7-7.4-5.7-5 7.5-.7z"/></symbol>
+    </defs>
+  </svg>
+
+  <canvas id="fondo" aria-hidden="true"></canvas>
+
+  <header class="barra" id="barra">
+    <a class="barra__marca" href="#inicio" aria-label="Inicio">
+      <img src="assets/logo.webp" alt="" width="36" height="36">
+      <span>DGTIC 2026</span>
+    </a>
+    <nav class="barra__nav" aria-label="Secciones">
+      <a href="#detalles">Detalles</a>
+      <a href="#programa">Programa</a>
+      <a href="#encuesta" class="boton boton--mini">Votar</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio">
+      <img class="hero__logo" src="assets/logo.webp" alt="DGTIC Fiesta de Fin de Año 2026" width="420" height="380" fetchpriority="high">
+      <p class="hero__sobre">Estás invitado</p>
+      <h1 class="hero__titulo">Cena y baile de fin de año</h1>
+      <p class="hero__fecha" id="fechaTexto">Cargando…</p>
+
+      <div class="cuenta" id="cuenta" hidden aria-live="polite">
+        <div><b id="cd-d">0</b><span>días</span></div>
+        <div><b id="cd-h">0</b><span>horas</span></div>
+        <div><b id="cd-m">0</b><span>min</span></div>
+        <div><b id="cd-s">0</b><span>seg</span></div>
+      </div>
+
+      <a class="boton boton--grande" href="#encuesta">
+        <svg class="ico"><use href="#i-sparkles"/></svg> Elige tu menú y tu música
+      </a>
+      <a class="hero__bajar" href="#detalles" aria-label="Ver detalles"><span></span></a>
+    </section>
+
+    <section class="seccion" id="detalles">
+      <h2 class="seccion__titulo">Detalles</h2>
+      <div class="tarjetas">
+        <article class="tarjeta">
+          <svg class="ico ico--oro"><use href="#i-calendar"/></svg>
+          <h3>Fecha</h3>
+          <p id="det-fecha">Por confirmar</p>
+        </article>
+        <article class="tarjeta">
+          <svg class="ico ico--oro"><use href="#i-pin"/></svg>
+          <h3>Lugar</h3>
+          <p id="det-lugar">—</p>
+          <a id="det-mapa" class="enlace" hidden target="_blank" rel="noopener noreferrer">Ver mapa</a>
+        </article>
+        <article class="tarjeta">
+          <svg class="ico ico--oro"><use href="#i-clock"/></svg>
+          <h3>Recepción</h3>
+          <p id="det-recepcion">—</p>
+        </article>
+      </div>
+      <div class="incluye">
+        <h3><svg class="ico"><use href="#i-utensils"/></svg> El servicio incluye</h3>
+        <ul id="lista-incluye"></ul>
+      </div>
+    </section>
+
+    <section class="seccion" id="programa">
+      <h2 class="seccion__titulo">Programa</h2>
+      <ol class="linea" id="linea"></ol>
+    </section>
+
+    <section class="seccion seccion--encuesta" id="encuesta">
+      <h2 class="seccion__titulo">Tú decides</h2>
+      <p class="seccion__sub">Responde en un minuto. Solo se permite una participación por celular.</p>
+      <div class="encuesta" id="encuesta-caja" aria-live="polite">
+        <div class="cargando"><span></span><span></span><span></span></div>
+      </div>
+      <p class="seguro"><svg class="ico"><use href="#i-shield"/></svg> Tus respuestas son anónimas y protegidas contra votos duplicados.</p>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <img src="assets/logo.webp" alt="" width="56" height="56">
+    <p>Fiesta de Fin de Año DGTIC 2026</p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
