@@ -104,7 +104,7 @@ export const ENCUESTAS = [
     tipo: 'multiple',
     desplegable: true,
     otro: true,
-    max: 5,
+    max: 3,
     opciones: [
       { id: 'cumbia', label: 'Cumbia' },
       { id: 'cumbia-sonidera', label: 'Cumbia sonidera' },
