@@ -31,34 +31,29 @@ function nueva(arriba = false) {
 }
 
 function ajustar() {
-  dpr = Math.min(devicePixelRatio || 1, 2);
+  dpr = Math.min(devicePixelRatio || 1, 1.5);
   w = innerWidth;
   h = innerHeight;
   canvas.width = w * dpr;
   canvas.height = h * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const cantidad = Math.round(Math.min(160, (w * h) / 11000));
+  const cantidad = Math.round(Math.min(70, (w * h) / 22000));
   particulas = Array.from({ length: cantidad }, () => nueva());
 }
 
 function destello(p, t) {
-  const brillo = 0.55 + 0.45 * Math.sin(t / 380 + p.f);
-  ctx.globalAlpha = p.o * brillo;
+  ctx.globalAlpha = p.o * (0.55 + 0.45 * Math.sin(t / 380 + p.f));
   ctx.fillStyle = p.c;
-  const s = p.r * 2.4;
-  ctx.beginPath();
-  ctx.moveTo(p.x, p.y - s);
-  ctx.quadraticCurveTo(p.x, p.y, p.x + s, p.y);
-  ctx.quadraticCurveTo(p.x, p.y, p.x, p.y + s);
-  ctx.quadraticCurveTo(p.x, p.y, p.x - s, p.y);
-  ctx.quadraticCurveTo(p.x, p.y, p.x, p.y - s);
-  ctx.fill();
+  const s = p.r * 2.2;
+  ctx.fillRect(p.x - 0.7, p.y - s, 1.4, s * 2);
+  ctx.fillRect(p.x - s, p.y - 0.7, s * 2, 1.4);
 }
 
 let ultimo = 0;
 function cuadro(t) {
   requestAnimationFrame(cuadro);
   if (!activo) return;
+  if (t - ultimo < 22) return;
   const dt = Math.min((t - ultimo) / 16.7 || 1, 3);
   ultimo = t;
   ctx.clearRect(0, 0, w, h);
@@ -104,7 +99,7 @@ export function lanzarConfeti() {
   if (reducir) return;
   const origenes = [0.2, 0.5, 0.8];
   for (const ox of origenes) {
-    for (let i = 0; i < 55; i++) {
+    for (let i = 0; i < 40; i++) {
       const ang = rnd(-Math.PI * 0.9, -Math.PI * 0.1);
       const fuerza = rnd(5, 13);
       confeti.push({

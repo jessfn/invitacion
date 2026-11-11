@@ -3,7 +3,6 @@ import { obtenerHuella } from './huella.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
-const MARCA_LOCAL = 'dgtic2026:voto';
 
 // ---------- utilidades ----------
 function icono(nombre, clase = 'ico') {
@@ -21,7 +20,6 @@ function h(tag, attrs = {}, ...hijos) {
   for (const [k, v] of Object.entries(attrs)) {
     if (v == null || v === false) continue;
     if (k === 'class') el.className = v;
-    else if (k === 'vars') for (const [n, x] of Object.entries(v)) el.style.setProperty(n, x);
     else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
     else el.setAttribute(k, v === true ? '' : v);
   }
@@ -29,9 +27,8 @@ function h(tag, attrs = {}, ...hijos) {
   return el;
 }
 
-const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
-const leer = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-const vibrar = (ms = 12) => navigator.vibrate?.(ms);
+const vibrar = (ms = 10) => navigator.vibrate?.(ms);
+const limpio = (t) => (typeof t === 'string' ? t.replace(/\s+/g, ' ').trim() : '');
 
 async function pedir(ruta, opciones = {}) {
   const huella = await obtenerHuella();
@@ -48,12 +45,10 @@ async function pedir(ruta, opciones = {}) {
 // ---------- invitación ----------
 function pintarEvento(ev) {
   const fecha = ev.fecha ? new Date(ev.fecha) : null;
-  const larga = fecha
-    ? new Intl.DateTimeFormat('es-MX', { dateStyle: 'full' }).format(fecha)
-    : 'Fecha por confirmar';
+  const larga = fecha ? new Intl.DateTimeFormat('es-MX', { dateStyle: 'full' }).format(fecha) : '';
   const hora = fecha ? new Intl.DateTimeFormat('es-MX', { timeStyle: 'short' }).format(fecha) : '';
   $('fechaTexto').textContent = fecha ? `${larga} · ${ev.lugar}` : `${ev.lugar} · fecha por confirmar`;
-  $('det-fecha').textContent = fecha ? `${larga}${hora ? ` · ${hora}` : ''}` : 'Por confirmar';
+  $('det-fecha').textContent = fecha ? `${larga} · ${hora}` : 'Por confirmar';
   $('det-lugar').textContent = ev.direccion ? `${ev.lugar} — ${ev.direccion}` : ev.lugar;
   $('det-recepcion').textContent = ev.recepcion;
   if (ev.mapa && /^https:\/\//.test(ev.mapa)) {
@@ -70,7 +65,7 @@ function pintarEvento(ev) {
       )
     )
   );
-  observarLinea();
+  observar('.linea li');
   if (fecha) iniciarCuenta(fecha);
 }
 
@@ -90,85 +85,79 @@ function iniciarCuenta(fecha) {
   setInterval(tic, 1000);
 }
 
-function observarLinea() {
-  document.querySelectorAll('.linea li').forEach((li) => li.classList.add('revelar'));
-  observar('.linea li');
-}
-
 function observar(selector) {
   const items = document.querySelectorAll(selector);
   if (!('IntersectionObserver' in window)) return items.forEach((i) => i.classList.add('visible'));
   const obs = new IntersectionObserver((entradas) => {
     for (const e of entradas) if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
-  }, { threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
+  }, { threshold: 0.12 });
   items.forEach((i) => obs.observe(i));
 }
 
-// ---------- efectos visuales ----------
+// ---------- efectos ligeros ----------
 function iniciarEfectos() {
-  // Luces navideñas
   const luces = $('luces');
-  const n = Math.max(10, Math.round(innerWidth / 48));
+  const n = Math.max(8, Math.round(innerWidth / 56));
   luces.replaceChildren(...Array.from({ length: n }, () => h('b')));
 
-  // Título cinético: letra por letra
-  const titulo = $('tituloCinetico');
+  // Título letra por letra (solo opacidad y transform)
   let k = 0;
   const trocear = (nodo) => {
     for (const hijo of [...nodo.childNodes]) {
       if (hijo.nodeType === 3) {
         const frag = document.createDocumentFragment();
-        for (const ch of hijo.textContent) {
-          if (ch === ' ') { frag.append(' '); continue; }
-          const sp = h('span', { class: 'letra', 'aria-hidden': 'true' }, ch);
-          sp.style.animationDelay = `${0.35 + k++ * 0.035}s`;
-          frag.append(sp);
-        }
+        // Cada palabra va en un contenedor que no se parte, para que las letras no se separen.
+        hijo.textContent.split(/(\s+)/).forEach((trozo) => {
+          if (!trozo) return;
+          if (/^\s+$/.test(trozo)) { frag.append(' '); return; }
+          const palabra = h('span', { class: 'palabra' });
+          if (nodo.tagName === 'EM') {
+            // El degradado de texto no funciona con letras sueltas: se anima la palabra completa.
+            const sp = h('span', { class: 'letra', 'aria-hidden': 'true' }, trozo);
+            sp.style.animationDelay = `${0.15 + k++ * 0.03}s, 0s`;
+            frag.append(sp);
+            return;
+          }
+          for (const ch of trozo) {
+            const sp = h('span', { class: 'letra', 'aria-hidden': 'true' }, ch);
+            sp.style.animationDelay = `${0.15 + k++ * 0.03}s`;
+            palabra.append(sp);
+          }
+          frag.append(palabra);
+        });
         hijo.replaceWith(frag);
       } else trocear(hijo);
     }
   };
-  trocear(titulo);
+  trocear($('tituloCinetico'));
 
-  // Barra de progreso de scroll
+  // Scroll: un solo rAF por cuadro
   const barra = $('scrollBarra');
   const linea = $('linea');
-  const alScroll = () => {
+  let pendiente = false;
+  const pintar = () => {
+    pendiente = false;
     const max = document.documentElement.scrollHeight - innerHeight;
     barra.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
     const r = linea.getBoundingClientRect();
-    const p = (innerHeight * 0.7 - r.top) / r.height;
-    linea.style.setProperty('--prog', Math.max(0, Math.min(1, p)));
+    linea.style.setProperty('--prog', Math.max(0, Math.min(1, (innerHeight * 0.75 - r.top) / r.height)).toFixed(3));
   };
-  addEventListener('scroll', alScroll, { passive: true });
-  alScroll();
+  addEventListener('scroll', () => { if (!pendiente) { pendiente = true; requestAnimationFrame(pintar); } }, { passive: true });
+  pintar();
 
-  // Revelar al hacer scroll
-  document.querySelectorAll('.reveal').forEach((el, i) => el.style.setProperty('--d', `${(i % 4) * 0.08}s`));
+  document.querySelectorAll('.reveal').forEach((el, i) => el.style.setProperty('--d', `${(i % 3) * 0.07}s`));
   observar('.reveal');
 
-  // Foco de luz que sigue al puntero en las tarjetas + inclinación suave
-  document.querySelectorAll('.tile').forEach((t) => {
-    t.addEventListener('pointermove', (e) => {
-      const r = t.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width;
-      const y = (e.clientY - r.top) / r.height;
-      t.style.setProperty('--mx', `${x * 100}%`);
-      t.style.setProperty('--my', `${y * 100}%`);
-      if (e.pointerType === 'mouse') t.style.transform = `perspective(800px) rotateX(${(0.5 - y) * 6}deg) rotateY(${(x - 0.5) * 8}deg) translateY(-3px)`;
+  // Foco de luz en tarjetas (solo con ratón)
+  if (matchMedia('(hover: hover)').matches) {
+    document.querySelectorAll('.tile').forEach((t) => {
+      t.addEventListener('pointermove', (e) => {
+        const r = t.getBoundingClientRect();
+        t.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`);
+        t.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
+      }, { passive: true });
     });
-    t.addEventListener('pointerleave', () => { t.style.transform = ''; });
-  });
-
-  // Botones magnéticos
-  document.querySelectorAll('.iman').forEach((b) => {
-    b.addEventListener('pointermove', (e) => {
-      if (e.pointerType !== 'mouse') return;
-      const r = b.getBoundingClientRect();
-      b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.18}px, ${(e.clientY - r.top - r.height / 2) * 0.28}px)`;
-    });
-    b.addEventListener('pointerleave', () => { b.style.transform = ''; });
-  });
+  }
 }
 
 // ---------- encuesta ----------
@@ -181,34 +170,35 @@ let enviando = false;
 let atras = false;
 const abiertos = new Set();
 
-const textoRespuesta = (enc, valor) => {
-  if (enc.tipo === 'texto') return valor || 'Sin respuesta';
-  const etiqueta = (id) => enc.opciones.find((o) => o.id === id)?.label ?? id;
-  return Array.isArray(valor) ? valor.map(etiqueta).join(', ') : etiqueta(valor);
-};
+const OTRO = (enc) => `${enc.id}_otro`;
 
-function completa(enc) {
+function seleccion(enc) {
   const v = respuestas[enc.id];
-  if (enc.tipo === 'texto') return true;
-  return enc.tipo === 'unica' ? Boolean(v) : Array.isArray(v) && v.length > 0;
+  if (enc.tipo === 'unica') return v ? [v] : [];
+  return Array.isArray(v) ? v : [];
 }
 
-function alternar(enc, opcion) {
-  vibrar();
-  error = '';
-  if (enc.tipo === 'unica') {
-    respuestas[enc.id] = opcion.id;
-    dibujar();
-    // Avanza solo al elegir en preguntas de opción única.
-    setTimeout(() => { if (respuestas[enc.id] === opcion.id) ir(1); }, 320);
-    return;
+function completa(enc) {
+  if (enc.tipo === 'texto') return true;
+  if (enc.tipo === 'cancion') {
+    const c = respuestas[enc.id] ?? {};
+    const a = limpio(c.artista);
+    const t = limpio(c.tema);
+    return (!a && !t) || Boolean(a && t);
   }
-  let lista = respuestas[enc.id] ?? [];
-  if (lista.includes(opcion.id)) lista = lista.filter((x) => x !== opcion.id);
-  else if (opcion.id === 'ninguna') lista = ['ninguna'];
-  else if (lista.length < enc.max) lista = [...lista.filter((x) => x !== 'ninguna'), opcion.id];
-  respuestas[enc.id] = lista;
-  dibujar();
+  const sel = seleccion(enc);
+  if (!sel.length) return false;
+  return !(sel.includes('otro') && !limpio(respuestas[OTRO(enc)]));
+}
+
+function textoRespuesta(enc) {
+  if (enc.tipo === 'cancion') {
+    const c = respuestas[enc.id] ?? {};
+    return limpio(c.artista) ? `${limpio(c.artista)} — ${limpio(c.tema)}` : 'Sin canción';
+  }
+  return seleccion(enc)
+    .map((id) => (id === 'otro' ? `Otro: ${limpio(respuestas[OTRO(enc)])}` : enc.opciones.find((o) => o.id === id)?.label ?? id))
+    .join(', ');
 }
 
 function ir(delta) {
@@ -216,7 +206,7 @@ function ir(delta) {
   paso = Math.max(0, Math.min(encuestas.length, paso + delta));
   error = '';
   dibujar();
-  caja.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  caja.closest('.encuesta-marco').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function dibujar() {
@@ -224,111 +214,174 @@ function dibujar() {
   const enResumen = paso >= total;
   const progreso = h('div', { class: 'progreso', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': total, 'aria-valuenow': Math.min(paso, total) },
     Array.from({ length: total + 1 }, (_, i) => h('i', { class: i <= paso ? 'hecho' : '' })));
-
-  const contenido = enResumen ? vistaResumen() : vistaPregunta(encuestas[paso]);
-  const marco = h('div', { class: `paso${atras ? ' paso--atras' : ''}` }, contenido);
   caja.replaceChildren(
     progreso,
     h('div', { class: 'paso__contador' }, enResumen ? 'Revisa tus respuestas' : `Pregunta ${paso + 1} de ${total}`),
-    marco
+    h('div', { class: `paso${atras ? ' paso--atras' : ''}` }, enResumen ? vistaResumen() : vistaPregunta(encuestas[paso]))
   );
   atras = false;
 }
 
-function desplegable(enc, lista, valor) {
-  const abierto = abiertos.has(enc.id);
-  const sel = enc.tipo === 'unica' ? (valor ? [valor] : []) : (valor ?? []);
-  const etiquetas = sel.map((id) => enc.opciones.find((o) => o.id === id)?.label).filter(Boolean);
-  const caja = h('div', { class: `desplegable${abierto ? ' abierto' : ''}` });
-  const boton = h('button', {
-    type: 'button', class: 'desplegable__boton', 'aria-expanded': String(abierto),
-    onclick: () => {
-      const abre = !caja.classList.contains('abierto');
-      caja.classList.toggle('abierto', abre);
-      boton.setAttribute('aria-expanded', String(abre));
-      abre ? abiertos.add(enc.id) : abiertos.delete(enc.id);
-      vibrar(8);
-    }
-  },
-    h('span', {}, etiquetas.length ? etiquetas.join(', ') : 'Toca para ver las opciones',
-      h('small', {}, enc.tipo === 'multiple' ? `${sel.length} de ${enc.max} elegidas` : 'Elige una')),
-    icono('chevron')
+function cabecera(icon, titulo, desc) {
+  return h('div', { class: 'paso__cab' },
+    h('div', { class: 'paso__icono' }, icono(icon)),
+    h('div', {}, h('h3', {}, titulo), h('p', { class: 'paso__desc' }, desc))
   );
-  caja.append(boton, h('div', { class: 'desplegable__panel' }, h('div', {}, lista)));
-  return caja;
 }
 
+// La pregunta se construye una sola vez; los toques solo actualizan atributos (sin re-render).
 function vistaPregunta(enc) {
-  const valor = respuestas[enc.id];
-  const ayuda =
-    enc.tipo === 'unica' ? 'Elige 1 opción' :
-    enc.tipo === 'multiple' ? `Elige hasta ${enc.max} · ${(valor ?? []).length}/${enc.max}` : 'Opcional';
-
+  const esUltima = paso === encuestas.length - 1;
+  const btnSig = h('button', { type: 'button', class: 'boton', onclick: () => ir(1) }, esUltima ? 'Revisar' : 'Siguiente', icono('arrow-r'));
+  const btnAtras = paso > 0
+    ? h('button', { type: 'button', class: 'boton boton--fantasma', onclick: () => ir(-1), 'aria-label': 'Anterior' }, icono('arrow-l'))
+    : null;
+  const ayuda = h('span', { class: 'paso__ayuda' });
   let cuerpo;
-  if (enc.tipo === 'texto') {
-    cuerpo = h('input', {
-      class: 'campo', type: 'text', maxlength: enc.maxLength, placeholder: enc.placeholder,
-      value: valor ?? '', autocomplete: 'off', 'aria-label': enc.titulo,
-      oninput: (e) => { respuestas[enc.id] = e.target.value; },
-      onkeydown: (e) => { if (e.key === 'Enter') ir(1); }
-    });
+  let refrescar = () => {};
+
+  if (enc.tipo === 'cancion') {
+    respuestas[enc.id] ??= { artista: '', tema: '' };
+    const campo = (clave, etiqueta, ph) =>
+      h('label', { class: 'etiqueta' }, etiqueta,
+        h('input', {
+          class: 'campo', type: 'text', maxlength: enc.maxLength, placeholder: ph, autocomplete: 'off', enterkeyhint: 'next',
+          value: respuestas[enc.id][clave],
+          oninput: (e) => { respuestas[enc.id][clave] = e.target.value; refrescar(); }
+        }));
+    cuerpo = h('div', { class: 'campos' }, campo('artista', 'Artista', 'Ej. Chocolate Khan'), campo('tema', 'Canción', 'Ej. Mayonesa'));
+    refrescar = () => {
+      btnSig.disabled = !completa(enc);
+      ayuda.textContent = completa(enc) ? 'Opcional · puedes dejarlo vacío' : 'Escribe artista y canción';
+    };
   } else {
-    const llena = enc.tipo === 'multiple' && (valor ?? []).length >= enc.max;
-    const lista = h('div', { class: `opciones${enc.opciones.length > 6 ? ' opciones--dos' : ''}${enc.tipo === 'multiple' ? ' multi' : ''}`, role: enc.tipo === 'unica' ? 'radiogroup' : 'group', 'aria-label': enc.titulo },
-      enc.opciones.map((o, i) => {
-        const marcada = enc.tipo === 'unica' ? valor === o.id : (valor ?? []).includes(o.id);
-        return h('button', {
-          type: 'button', class: 'opcion', vars: { '--i': i }, role: enc.tipo === 'unica' ? 'radio' : 'checkbox',
-          'aria-checked': String(marcada), disabled: llena && !marcada,
-          onclick: () => alternar(enc, o)
-        },
-          h('span', { class: 'marca' }, icono('check')),
-          h('span', {}, o.label, o.desc ? h('small', {}, o.desc) : null)
-        );
-      })
-    );
-    cuerpo = enc.desplegable ? desplegable(enc, lista, valor) : lista;
+    const botones = new Map();
+    const lista = h('div', { class: `opciones${enc.tipo === 'multiple' ? ' multi' : ''}`, role: enc.tipo === 'unica' ? 'radiogroup' : 'group', 'aria-label': enc.titulo });
+    for (const o of enc.opciones) {
+      const b = h('button', { type: 'button', class: 'opcion', role: enc.tipo === 'unica' ? 'radio' : 'checkbox', 'aria-checked': 'false', onclick: () => elegir(o) },
+        h('span', { class: 'marca' }, icono('check')),
+        h('span', {}, o.label, o.desc ? h('small', {}, o.desc) : null));
+      botones.set(o.id, b);
+      lista.append(b);
+    }
+
+    const campoOtro = enc.otro
+      ? h('input', {
+          class: 'campo otro', type: 'text', maxlength: 60, placeholder: '¿Cuál? Escríbelo aquí', autocomplete: 'off', hidden: true,
+          'aria-label': 'Otro', value: respuestas[OTRO(enc)] ?? '',
+          oninput: (e) => { respuestas[OTRO(enc)] = e.target.value; refrescar(); }
+        })
+      : null;
+
+    let panel;
+    let etiquetaBoton;
+    let subBoton;
+    if (enc.desplegable) {
+      const abierto = abiertos.has(enc.id);
+      etiquetaBoton = h('span', {});
+      subBoton = h('small', {});
+      panel = h('div', { class: 'desplegable__panel', hidden: !abierto }, lista, campoOtro);
+      const envoltorio = h('div', { class: `desplegable${abierto ? ' abierto' : ''}` });
+      const boton = h('button', {
+        type: 'button', class: 'desplegable__boton', 'aria-expanded': String(abierto),
+        onclick: () => {
+          const abre = panel.hidden;
+          panel.hidden = !abre;
+          envoltorio.classList.toggle('abierto', abre);
+          boton.setAttribute('aria-expanded', String(abre));
+          abre ? abiertos.add(enc.id) : abiertos.delete(enc.id);
+        }
+      }, h('span', {}, etiquetaBoton, subBoton), icono('chevron'));
+      envoltorio.append(boton, panel);
+      cuerpo = envoltorio;
+    } else {
+      cuerpo = h('div', {}, lista, campoOtro);
+    }
+
+    const cerrar = () => {
+      if (!enc.desplegable) return;
+      panel.hidden = true;
+      cuerpo.classList.remove('abierto');
+      cuerpo.firstChild.setAttribute('aria-expanded', 'false');
+      abiertos.delete(enc.id);
+    };
+
+    function elegir(o) {
+      vibrar();
+      error = '';
+      if (enc.tipo === 'unica') {
+        respuestas[enc.id] = o.id;
+        refrescar();
+        if (o.otro) campoOtro?.focus();
+        else setTimeout(() => { if (respuestas[enc.id] === o.id && paso === encuestas.indexOf(enc)) { cerrar(); ir(1); } }, 320);
+        return;
+      }
+      let sel = seleccion(enc);
+      if (sel.includes(o.id)) sel = sel.filter((x) => x !== o.id);
+      else if (sel.length < enc.max) sel = [...sel, o.id];
+      respuestas[enc.id] = sel;
+      refrescar();
+      if (o.otro && sel.includes('otro')) campoOtro?.focus();
+    }
+
+    refrescar = () => {
+      const sel = seleccion(enc);
+      const llena = enc.tipo === 'multiple' && sel.length >= enc.max;
+      for (const [id, b] of botones) {
+        const on = sel.includes(id);
+        b.setAttribute('aria-checked', String(on));
+        b.disabled = llena && !on;
+      }
+      if (campoOtro) campoOtro.hidden = !sel.includes('otro');
+      ayuda.textContent = enc.tipo === 'unica' ? 'Elige 1 opción' : `Elige hasta ${enc.max} · ${sel.length}/${enc.max}`;
+      if (etiquetaBoton) {
+        const nombres = sel.map((id) => (id === 'otro' ? limpio(respuestas[OTRO(enc)]) || 'Otro' : enc.opciones.find((o) => o.id === id)?.label));
+        etiquetaBoton.textContent = nombres.length ? nombres.join(', ') : 'Toca para ver las opciones';
+        subBoton.textContent = enc.tipo === 'multiple' ? `${sel.length} de ${enc.max} elegidas` : 'Elige una';
+      }
+      btnSig.disabled = !completa(enc);
+    };
   }
 
-  const esUltima = paso === encuestas.length - 1;
+  refrescar();
   return [
-    h('div', { class: 'paso__cab' },
-      h('div', { class: 'paso__icono' }, icono(enc.icono)),
-      h('div', {}, h('h3', {}, enc.titulo), h('p', { class: 'paso__desc' }, enc.descripcion))
-    ),
-    h('span', { class: 'paso__ayuda' }, ayuda),
+    cabecera(enc.icono, enc.titulo, enc.descripcion),
+    ayuda,
     cuerpo,
     error ? h('p', { class: 'error', role: 'alert' }, error) : null,
-    h('div', { class: 'acciones' },
-      paso > 0 ? h('button', { type: 'button', class: 'boton boton--fantasma', onclick: () => ir(-1), 'aria-label': 'Anterior' }, icono('arrow-l')) : null,
-      h('button', { type: 'button', class: 'boton', disabled: !completa(enc), onclick: () => ir(1) },
-        esUltima ? 'Revisar' : 'Siguiente', icono('arrow-r'))
-    )
+    h('div', { class: 'acciones' }, btnAtras, btnSig)
   ];
 }
 
 function vistaResumen() {
   return [
-    h('div', { class: 'paso__cab' },
-      h('div', { class: 'paso__icono' }, icono('star')),
-      h('div', {}, h('h3', {}, 'Todo listo'), h('p', { class: 'paso__desc' }, 'Una vez enviadas no se podrán cambiar.'))
-    ),
+    cabecera('star', 'Todo listo', 'Una vez enviadas no se podrán cambiar.'),
     h('ul', { class: 'resumen' },
-      encuestas.map((enc, i) =>
-        h('li', {}, icono(enc.icono),
-          h('div', {}, h('b', {}, enc.titulo), textoRespuesta(enc, respuestas[enc.id])),
-        )
-      )
+      encuestas.map((enc) => h('li', {}, icono(enc.icono), h('div', {}, h('b', {}, enc.titulo), textoRespuesta(enc))))
     ),
     // Campo trampa para bots: las personas no lo ven ni lo llenan.
     h('input', { class: 'trampa', type: 'text', name: 'sitio', tabindex: '-1', autocomplete: 'off', 'aria-hidden': 'true', id: 'trampa' }),
     error ? h('p', { class: 'error', role: 'alert' }, error) : null,
     h('div', { class: 'acciones' },
       h('button', { type: 'button', class: 'boton boton--fantasma', onclick: () => ir(-1), 'aria-label': 'Anterior' }, icono('arrow-l')),
-      h('button', { type: 'button', class: 'boton', disabled: enviando, onclick: enviar },
-        icono('send'), enviando ? 'Enviando…' : 'Enviar mis votos')
+      h('button', { type: 'button', class: 'boton', disabled: enviando, onclick: enviar }, icono('send'), enviando ? 'Enviando…' : 'Enviar mis votos')
     )
   ];
+}
+
+function cargaUtil() {
+  const out = {};
+  for (const enc of encuestas) {
+    if (enc.tipo === 'cancion') {
+      const c = respuestas[enc.id] ?? {};
+      if (limpio(c.artista) && limpio(c.tema)) out[enc.id] = { artista: limpio(c.artista), tema: limpio(c.tema) };
+      continue;
+    }
+    const sel = seleccion(enc);
+    out[enc.id] = enc.tipo === 'unica' ? sel[0] : sel;
+    if (sel.includes('otro')) out[OTRO(enc)] = limpio(respuestas[OTRO(enc)]);
+  }
+  return out;
 }
 
 async function enviar() {
@@ -337,20 +390,12 @@ async function enviar() {
   error = '';
   dibujar();
   try {
-    const limpias = { ...respuestas };
-    if (typeof limpias.cancion === 'string') limpias.cancion = limpias.cancion.trim();
-    await pedir('/api/votar', {
-      method: 'POST',
-      body: JSON.stringify({ respuestas: limpias, sitio: $('trampa')?.value ?? '' })
-    });
-    guardar(MARCA_LOCAL, '1');
+    await pedir('/api/votar', { method: 'POST', body: JSON.stringify({ respuestas: cargaUtil(), sitio: $('trampa')?.value ?? '' }) });
     vibrar([20, 40, 20]);
     await mostrarResultados(true);
   } catch (e) {
-    if (e.estado === 409 || e.datos?.yaVoto) {
-      guardar(MARCA_LOCAL, '1');
-      await mostrarResultados(false);
-    } else {
+    if (e.estado === 409 || e.datos?.yaVoto) await mostrarResultados(false);
+    else {
       error = e.message || 'No se pudo enviar. Intenta de nuevo.';
       enviando = false;
       dibujar();
@@ -372,16 +417,10 @@ async function mostrarResultados(recienVotado) {
     h('div', { class: 'gracias' },
       h('div', { class: 'sello' }, icono('check')),
       h('h3', {}, recienVotado ? '¡Gracias por ' : 'Ya ', h('em', {}, recienVotado ? 'votar!' : 'participaste')),
-      h('p', {}, recienVotado
-        ? 'Tus respuestas ya cuentan. Nos vemos en la fiesta.'
-        : 'Este celular ya registró sus respuestas. Nos vemos en la fiesta.')
+      h('p', {}, 'Este celular ya registró sus respuestas. Nos vemos en la fiesta.')
     ),
-    h('div', { class: 'ficha' },
-      h('ul', { class: 'resumen' },
-        datos.preguntas.map((p, i) =>
-          h('li', { vars: { '--i': i } }, icono(p.icono), h('div', {}, h('b', {}, p.titulo), p.mias.join(', ')))
-        )
-      )
+    h('ul', { class: 'resumen' },
+      datos.preguntas.map((p) => h('li', {}, icono(p.icono), h('div', {}, h('b', {}, p.titulo), p.mias.join(', '))))
     )
   );
   if (recienVotado) lanzarConfeti();
@@ -393,16 +432,8 @@ async function iniciar() {
     const datos = await pedir('/api/evento');
     pintarEvento(datos.evento);
     encuestas = datos.encuestas;
-    if (datos.yaVoto) {
-      await mostrarResultados(false);
-    } else {
-      if (leer(MARCA_LOCAL)) {
-        // La marca local existe pero el servidor no reconoce el voto (p. ej. se reinició la base):
-        // se limpia y se deja participar.
-        try { localStorage.removeItem(MARCA_LOCAL); } catch {}
-      }
-      dibujar();
-    }
+    if (datos.yaVoto) await mostrarResultados(false);
+    else dibujar();
   } catch (e) {
     caja.replaceChildren(h('p', { class: 'error', role: 'alert' }, 'No pudimos cargar la encuesta. Recarga la página.'));
     console.error(e);

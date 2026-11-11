@@ -82,13 +82,18 @@ export const ENCUESTAS = [
     icono: 'headphones',
     tipo: 'unica',
     desplegable: true,
+    otro: true,
     opciones: [
       { id: 'instrumental', label: 'Instrumental / Jazz suave' },
       { id: 'baladas', label: 'Baladas románticas' },
       { id: 'pop-acustico', label: 'Pop acústico' },
       { id: 'bossa', label: 'Bossa nova y lounge' },
       { id: 'clasicos', label: 'Clásicos en español' },
-      { id: 'mariachi', label: 'Mariachi y trova' }
+      { id: 'clasicos-ingles', label: 'Clásicos en inglés' },
+      { id: 'mariachi', label: 'Mariachi y trova' },
+      { id: 'boleros', label: 'Boleros' },
+      { id: 'navidenas', label: 'Música navideña' },
+      { id: 'otro', label: 'Otro…', otro: true }
     ]
   },
   {
@@ -98,30 +103,47 @@ export const ENCUESTAS = [
     icono: 'music',
     tipo: 'multiple',
     desplegable: true,
-    max: 3,
+    otro: true,
+    max: 5,
     opciones: [
       { id: 'cumbia', label: 'Cumbia' },
+      { id: 'cumbia-sonidera', label: 'Cumbia sonidera' },
+      { id: 'cumbia-nortena', label: 'Cumbia norteña' },
       { id: 'salsa', label: 'Salsa' },
-      { id: 'merengue', label: 'Merengue y bachata' },
+      { id: 'merengue', label: 'Merengue' },
+      { id: 'bachata', label: 'Bachata' },
+      { id: 'vallenato', label: 'Vallenato' },
       { id: 'banda', label: 'Banda' },
       { id: 'norteno', label: 'Norteño' },
+      { id: 'corridos', label: 'Corridos tumbados' },
+      { id: 'regional', label: 'Regional mexicano' },
       { id: 'reggaeton', label: 'Reggaetón' },
-      { id: 'pop', label: 'Pop en español' },
-      { id: 'rock', label: 'Rock en español' },
+      { id: 'reggaeton-old', label: 'Reggaetón old school' },
+      { id: 'perreo', label: 'Perreo' },
+      { id: 'trap', label: 'Trap' },
+      { id: 'hiphop', label: 'Hip hop / Rap' },
+      { id: 'urbano', label: 'Urbano latino' },
+      { id: 'pop-es', label: 'Pop en español' },
+      { id: 'pop-en', label: 'Pop en inglés' },
+      { id: 'rock-es', label: 'Rock en español' },
+      { id: 'rock-en', label: 'Rock en inglés' },
       { id: 'electronica', label: 'Electrónica / House' },
-      { id: 'ochentas-noventas', label: 'Éxitos 80s y 90s' },
+      { id: 'disco', label: 'Disco y funk' },
+      { id: 'ochentas', label: 'Éxitos de los 80s' },
+      { id: 'noventas', label: 'Éxitos de los 90s' },
+      { id: 'dosmiles', label: 'Éxitos de los 2000s' },
       { id: 'tropical', label: 'Tropical / Sonidero' },
-      { id: 'urbano', label: 'Urbano / Hip hop' }
+      { id: 'kpop', label: 'K-pop' },
+      { id: 'otro', label: 'Otro…', otro: true }
     ]
   },
   {
     id: 'cancion',
-    titulo: 'Canción para abrir la pista',
-    descripcion: 'Opcional: escribe una canción y su artista.',
+    titulo: 'Pide tu canción',
+    descripcion: 'Opcional: dinos qué canción quieres escuchar.',
     icono: 'disc',
-    tipo: 'texto',
-    maxLength: 80,
-    placeholder: 'Ej. Mayonesa - Chocolate Khan'
+    tipo: 'cancion',
+    maxLength: 60
   }
 ];
 

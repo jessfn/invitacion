@@ -111,11 +111,28 @@ function validar(respuestas) {
     return { error: 'Formato de respuestas inválido.' };
   }
   for (const k of Object.keys(respuestas)) {
-    if (!ENCUESTAS_POR_ID.has(k)) return { error: 'Pregunta desconocida.' };
+    const base = k.endsWith('_otro') ? k.slice(0, -5) : k;
+    if (!ENCUESTAS_POR_ID.has(base)) return { error: 'Pregunta desconocida.' };
   }
+  const limpiar = (t, max) => {
+    // eslint-disable-next-line no-control-regex
+    const x = t.replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim();
+    return x.length <= max ? x : null;
+  };
   const filas = [];
   for (const enc of ENCUESTAS) {
     const bruto = respuestas[enc.id];
+    if (enc.tipo === 'cancion') {
+      if (bruto == null) continue;
+      if (typeof bruto !== 'object' || Array.isArray(bruto)) return { error: 'Canción inválida.' };
+      const artista = typeof bruto.artista === 'string' ? limpiar(bruto.artista, enc.maxLength) : '';
+      const tema = typeof bruto.tema === 'string' ? limpiar(bruto.tema, enc.maxLength) : '';
+      if (artista === null || tema === null) return { error: 'Texto demasiado largo.' };
+      if (!artista && !tema) continue;
+      if (!artista || !tema) return { error: 'Escribe el artista y el nombre de la canción.' };
+      filas.push([enc.id, `${artista} — ${tema}`]);
+      continue;
+    }
     if (enc.tipo === 'texto') {
       if (bruto == null || bruto === '') continue;
       if (typeof bruto !== 'string') return { error: 'Respuesta de texto inválida.' };
@@ -138,6 +155,12 @@ function validar(respuestas) {
     if (!unicos.every((v) => typeof v === 'string' && ids.has(v))) return { error: 'Opción inválida.' };
     if (unicos.includes('ninguna') && unicos.length > 1) return { error: 'Selección contradictoria.' };
     for (const v of unicos) filas.push([enc.id, v]);
+    if (enc.otro && unicos.includes('otro')) {
+      const crudo = respuestas[`${enc.id}_otro`];
+      const texto = typeof crudo === 'string' ? limpiar(crudo, 60) : '';
+      if (!texto) return { error: `Escribe cuál en: ${enc.titulo}.` };
+      filas.push([`${enc.id}_otro`, texto]);
+    }
   }
   return { filas };
 }
@@ -147,7 +170,7 @@ function resultadosPublicos(propias) {
   for (const { pregunta, valor, n } of db.conteos()) conteos.set(`${pregunta}\u0000${valor}`, n);
   const mias = new Set(propias.map((r) => `${r.pregunta}\u0000${r.valor}`));
   const total = db.totalVotantes();
-  const preguntas = ENCUESTAS.filter((e) => e.tipo !== 'texto').map((e) => ({
+  const preguntas = ENCUESTAS.filter((e) => e.opciones).map((e) => ({
     id: e.id,
     titulo: e.titulo,
     icono: e.icono,
@@ -166,12 +189,17 @@ function misRespuestas(propias) {
   const por = new Map();
   for (const { pregunta, valor } of propias) por.set(pregunta, [...(por.get(pregunta) ?? []), valor]);
   return {
-    preguntas: ENCUESTAS.map((e) => ({
-      id: e.id,
-      titulo: e.titulo,
-      icono: e.icono,
-      mias: (por.get(e.id) ?? []).map((v) => e.opciones?.find((o) => o.id === v)?.label ?? v)
-    })).filter((p) => p.mias.length)
+    preguntas: ENCUESTAS.map((e) => {
+      const otro = por.get(`${e.id}_otro`)?.[0];
+      return {
+        id: e.id,
+        titulo: e.titulo,
+        icono: e.icono,
+        mias: (por.get(e.id) ?? []).map((v) =>
+          v === 'otro' && otro ? `Otro: ${otro}` : (e.opciones?.find((o) => o.id === v)?.label ?? v)
+        )
+      };
+    }).filter((p) => p.mias.length)
   };
 }
 
@@ -194,8 +222,8 @@ async function api(req, res, ruta) {
     });
 
   if (req.method === 'GET' && ruta === '/api/evento') {
-    const catalogo = ENCUESTAS.map(({ id: eid, titulo, descripcion, icono, tipo, desplegable, max, maxLength, placeholder, opciones }) => ({
-      id: eid, titulo, descripcion, icono, tipo, desplegable, max, maxLength, placeholder, opciones
+    const catalogo = ENCUESTAS.map(({ id: eid, titulo, descripcion, icono, tipo, desplegable, otro, max, maxLength, placeholder, opciones }) => ({
+      id: eid, titulo, descripcion, icono, tipo, desplegable, otro, max, maxLength, placeholder, opciones
     }));
     return json(res, 200, { evento: EVENTO, encuestas: catalogo, yaVoto: Boolean(yaVoto()) }, extra);
   }
@@ -250,11 +278,12 @@ async function api(req, res, ruta) {
     const clave = String(req.headers['x-admin-key'] ?? '');
     if (!ADMIN_KEY || !mismaClave(clave, ADMIN_KEY)) return json(res, 401, { error: 'No autorizado.' }, extra);
     const base = resultadosPublicos([]);
-    const texto = ENCUESTAS.filter((e) => e.tipo === 'texto').map((e) => ({
-      id: e.id,
-      titulo: e.titulo,
-      respuestas: db.textos(e.id)
-    }));
+    const texto = ENCUESTAS.flatMap((e) => {
+      const lista = [];
+      if (e.tipo === 'texto' || e.tipo === 'cancion') lista.push({ id: e.id, titulo: e.titulo, respuestas: db.textos(e.id) });
+      if (e.otro) lista.push({ id: `${e.id}_otro`, titulo: `${e.titulo} (otro)`, respuestas: db.textos(`${e.id}_otro`) });
+      return lista;
+    });
     return json(res, 200, { ...base, textos: texto }, extra);
   }
 

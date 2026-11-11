@@ -65,21 +65,22 @@
   <main>
     <section class="hero" id="inicio">
       <img class="hero__logo" src="assets/logo.webp" alt="DGTIC Fiesta de Fin de Año 2026" width="420" height="380" fetchpriority="high">
-      <p class="hero__sobre">Estás invitado</p>
-      <h1 class="hero__titulo" id="tituloCinetico" aria-label="Cena y baile de fin de año">Cena y baile de <em>fin de año</em></h1>
-      <p class="hero__fecha" id="fechaTexto">Cargando…</p>
+      <div class="hero__texto">
+        <p class="hero__sobre">Estás invitado</p>
+        <h1 class="hero__titulo" id="tituloCinetico" aria-label="Cena y baile de fin de año">Cena y baile de <em>fin de año</em></h1>
+        <p class="hero__fecha" id="fechaTexto">Cargando…</p>
 
-      <div class="cuenta" id="cuenta" hidden aria-live="polite">
-        <div><b id="cd-d">0</b><span>días</span></div>
-        <div><b id="cd-h">0</b><span>horas</span></div>
-        <div><b id="cd-m">0</b><span>min</span></div>
-        <div><b id="cd-s">0</b><span>seg</span></div>
+        <div class="cuenta" id="cuenta" hidden aria-live="polite">
+          <div><b id="cd-d">0</b><span>días</span></div>
+          <div><b id="cd-h">0</b><span>horas</span></div>
+          <div><b id="cd-m">0</b><span>min</span></div>
+          <div><b id="cd-s">0</b><span>seg</span></div>
+        </div>
+
+        <a class="boton boton--grande" href="#encuesta">
+          <svg class="ico"><use href="#i-sparkles"/></svg> Elige tu menú y tu música
+        </a>
       </div>
-
-      <a class="boton boton--grande iman" href="#encuesta">
-        <svg class="ico"><use href="#i-sparkles"/></svg> Elige tu menú y tu música
-      </a>
-      <a class="hero__bajar" href="#detalles" aria-label="Ver detalles"><span></span></a>
     </section>
 
     <div class="cinta" aria-hidden="true">
