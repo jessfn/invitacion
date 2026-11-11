@@ -34,7 +34,7 @@ const norm = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCa
 const pct = (n, base) => (base ? Math.round((n / base) * 100) : 0);
 
 // ---------- estado ----------
-const est = { filtros: [], rango: 'todo', seccion: 'todas', busqueda: '', datos: null };
+const est = { filtros: [], rango: 'todo', seccion: 'todas', dudosos: 'todos', busqueda: '', datos: null };
 const tarjetas = new Map();
 const paneles = new Map();
 let kpis = null;
@@ -65,6 +65,7 @@ async function cargar() {
   if (est.filtros.length) q.set('f', est.filtros.join(','));
   const d = desdeMs();
   if (d) q.set('desde', String(d));
+  if (est.dudosos === 'sin') q.set('sd', '1');
   try {
     est.datos = await api(`/api/admin/datos?${q}`);
     pintar();
@@ -131,12 +132,13 @@ function segmento(id, clave) {
     if (!b) return;
     est[clave] = b.dataset.v;
     $(id).querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
-    if (clave === 'rango') cargar();
+    if (clave === 'rango' || clave === 'dudosos') cargar();
     else aplicarVista();
   });
 }
 segmento('segRango', 'rango');
 segmento('segSeccion', 'seccion');
+segmento('segDudosos', 'dudosos');
 
 $('buscar').addEventListener('input', (e) => { est.busqueda = norm(e.target.value.trim()); aplicarVista(); });
 
@@ -184,7 +186,8 @@ function construirKpis() {
     ['baile', 'Género #1 para bailar', 'music'],
     ['canciones', 'Canciones pedidas', 'disc'],
     ['ultima', 'Última respuesta', 'clock'],
-    ['bloqueos', 'Votos duplicados bloqueados', 'shield']
+    ['bloqueos', 'Repetidos bloqueados', 'shield'],
+    ['dudosos', 'Votos dudosos', 'users']
   ];
   kpis = {};
   $('kpis').replaceChildren(...def.map(([id, titulo, ic, principal]) => {
@@ -229,11 +232,14 @@ function pintarKpis(d) {
   contar(kpis.canciones.v, canc.reduce((a, c) => a + c.n, 0));
   kpis.canciones.sub.textContent = `${canc.length} distintas`;
   const bl = d.bloqueos ?? {};
-  const totalBl = Object.values(bl).reduce((a, n) => a + n, 0);
-  contar(kpis.bloqueos.v, totalBl);
-  kpis.bloqueos.sub.textContent = totalBl
-    ? `Mismo teléfono: ${bl.dispositivo ?? 0} · misma huella: ${bl.huella ?? 0} · red: ${bl.ip ?? 0}`
-    : 'Nadie ha intentado votar dos veces';
+  contar(kpis.bloqueos.v, bl.dispositivo ?? 0);
+  kpis.bloqueos.sub.textContent = (bl.dispositivo ?? 0)
+    ? `Intentos desde el mismo navegador · avisos de teléfono parecido: ${bl.aviso ?? 0}`
+    : `Nadie ha repetido su voto · avisos de teléfono parecido: ${bl.aviso ?? 0}`;
+  contar(kpis.dudosos.v, d.dudososGlobal ?? 0);
+  kpis.dudosos.sub.textContent = (d.dudososGlobal ?? 0)
+    ? 'Teléfono parecido a otro voto, confirmado por la persona. Usa «Sin dudosos» para verlos aparte'
+    : 'Ningún voto necesitó confirmación';
   const ult = d.tiempos.at(-1);
   kpis.ultima.v.className = 'kpi__v texto';
   kpis.ultima.v.textContent = ult ? hace(ult) : '—';

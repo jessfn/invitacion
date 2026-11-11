@@ -218,6 +218,7 @@ let paso = 0;
 let respuestas = {};
 let error = '';
 let enviando = false;
+let pideConfirmar = false; // el servidor detectó un teléfono parecido a otro voto
 let atras = false;
 let modalActivo = null;
 
@@ -459,10 +460,17 @@ function vistaResumen() {
     ),
     // Campo trampa para bots: las personas no lo ven ni lo llenan.
     h('input', { class: 'trampa', type: 'text', name: 'sitio', tabindex: '-1', autocomplete: 'off', 'aria-hidden': 'true', id: 'trampa' }),
+    pideConfirmar
+      ? h('div', { class: 'confirma', role: 'alert' }, icono('info'),
+          h('p', {}, h('b', {}, 'Un momento. '),
+            'Otro voto salió de un teléfono igual al tuyo en esta misma red. Pasa con modelos idénticos. ',
+            'Si tú aún no has votado, confirma para continuar; si ya votaste, no necesitas repetirlo.'))
+      : null,
     error ? h('p', { class: 'error', role: 'alert' }, error) : null,
     h('div', { class: 'acciones' },
       h('button', { type: 'button', class: 'boton boton--fantasma', onclick: () => ir(-1), 'aria-label': 'Anterior' }, icono('arrow-l')),
-      h('button', { type: 'button', class: 'boton', disabled: enviando, onclick: enviar }, icono('send'), enviando ? 'Enviando…' : 'Enviar mis votos')
+      h('button', { type: 'button', class: 'boton', disabled: enviando, onclick: () => enviar(pideConfirmar) },
+        icono('send'), enviando ? 'Enviando…' : pideConfirmar ? 'Soy otra persona, enviar' : 'Enviar mis votos')
     )
   ];
 }
@@ -482,17 +490,21 @@ function cargaUtil() {
   return out;
 }
 
-async function enviar() {
+async function enviar(confirmo = false) {
   if (enviando) return;
   enviando = true;
   error = '';
   dibujar();
   try {
-    await pedir('/api/votar', { method: 'POST', body: JSON.stringify({ respuestas: cargaUtil(), sitio: $('trampa')?.value ?? '' }) });
+    await pedir('/api/votar', { method: 'POST', body: JSON.stringify({ respuestas: cargaUtil(), sitio: $('trampa')?.value ?? '', confirmo: confirmo === true }) });
     vibrar([20, 40, 20]);
     await mostrarResultados(true);
   } catch (e) {
-    if (e.estado === 409 || e.datos?.yaVoto) await mostrarResultados(false);
+    if (e.datos?.confirmar) {
+      pideConfirmar = true;
+      enviando = false;
+      dibujar();
+    } else if (e.estado === 409 || e.datos?.yaVoto) await mostrarResultados(false);
     else {
       error = e.message || 'No se pudo enviar. Intenta de nuevo.';
       enviando = false;

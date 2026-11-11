@@ -58,6 +58,9 @@ const ESQUEMA = `
   CREATE INDEX IF NOT EXISTS idx_respuestas_votante ON respuestas (votante_id);
   CREATE INDEX IF NOT EXISTS idx_respuestas_pregunta ON respuestas (pregunta, valor);
 
+  ALTER TABLE votantes ADD COLUMN IF NOT EXISTS dudoso BOOLEAN NOT NULL DEFAULT FALSE;
+  ALTER TABLE votantes ADD COLUMN IF NOT EXISTS coincide_con BIGINT;
+
   CREATE TABLE IF NOT EXISTS bloqueos (
     creado BIGINT NOT NULL,
     motivo TEXT   NOT NULL
@@ -78,20 +81,12 @@ export async function abrirDb({ url, dirDatos }) {
   return {
     motor: bd.motor,
 
-    // Devuelve { motivo, id } del voto previo de este dispositivo, o null.
-    // Orden: identidad firmada (cookie o localStorage) -> huella del dispositivo (+ red).
-    async buscarVoto({ deviceId, huella, ipHash, huellaSola = false }) {
-      if (deviceId) {
-        const r = await uno('SELECT id FROM votantes WHERE device_id = $1', [deviceId]);
-        if (r) return { motivo: 'dispositivo', id: r.id };
-      }
-      if (huella) {
-        const r = huellaSola
-          ? await uno('SELECT id FROM votantes WHERE huella = $1 ORDER BY id LIMIT 1', [huella])
-          : await uno('SELECT id FROM votantes WHERE huella = $1 AND ip_hash = $2 ORDER BY id LIMIT 1', [huella, ipHash]);
-        if (r) return { motivo: 'huella', id: r.id };
-      }
-      return null;
+    // Voto previo de este mismo navegador (cookie o token firmado). Es una identidad única y
+    // aleatoria, así que nunca confunde a dos personas: es lo único que bloquea de forma firme.
+    async buscarVoto({ deviceId }) {
+      if (!deviceId) return null;
+      const r = await uno('SELECT id FROM votantes WHERE device_id = $1', [deviceId]);
+      return r ? { motivo: 'dispositivo', id: r.id } : null;
     },
 
     async registrarBloqueo(motivo) {
@@ -105,24 +100,28 @@ export async function abrirDb({ url, dirDatos }) {
 
     // Inserta el voto y sus respuestas en una transacción. El candado asesor serializa
     // los votos, así las comprobaciones de duplicados no pueden competir entre sí.
-    async registrarVoto({ deviceId, huella, ipHash, filas, maxPorIp, estricto, huellaSola = false }) {
+    async registrarVoto({ deviceId, huella, ipHash, filas, maxPorIp, estricto, huellaSola = false, confirmo = false }) {
       try {
         return await bd.transaccion(async (q) => {
           await q('SELECT pg_advisory_xact_lock(7102027)');
           if ((await q('SELECT 1 FROM votantes WHERE device_id = $1', [deviceId])).rows.length) {
             return { ok: false, motivo: 'dispositivo' };
           }
-          if (estricto) {
+          // La huella NO bloquea: un teléfono idéntico de otra persona en la misma red daría la misma.
+          // Si coincide con un voto anterior se pide una confirmación y el voto queda marcado como dudoso.
+          let coincide = null;
+          if (estricto && huella) {
             const previa = huellaSola
-              ? await q('SELECT 1 FROM votantes WHERE huella = $1 LIMIT 1', [huella])
-              : await q('SELECT 1 FROM votantes WHERE huella = $1 AND ip_hash = $2 LIMIT 1', [huella, ipHash]);
-            if (previa.rows.length) return { ok: false, motivo: 'huella' };
+              ? await q('SELECT id FROM votantes WHERE huella = $1 ORDER BY id LIMIT 1', [huella])
+              : await q('SELECT id FROM votantes WHERE huella = $1 AND ip_hash = $2 ORDER BY id LIMIT 1', [huella, ipHash]);
+            coincide = previa.rows[0]?.id ?? null;
+            if (coincide && !confirmo) return { ok: false, motivo: 'confirmar' };
           }
           const { rows } = await q('SELECT COUNT(*)::int AS n FROM votantes WHERE ip_hash = $1', [ipHash]);
           if (Number(rows[0].n) >= maxPorIp) return { ok: false, motivo: 'ip' };
           const ins = await q(
-            'INSERT INTO votantes (device_id, huella, ip_hash, creado) VALUES ($1, $2, $3, $4) RETURNING id',
-            [deviceId, huella, ipHash, Date.now()]
+            'INSERT INTO votantes (device_id, huella, ip_hash, creado, dudoso, coincide_con) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            [deviceId, huella, ipHash, Date.now(), Boolean(coincide), coincide]
           );
           const id = ins.rows[0].id;
           for (const [pregunta, valor] of filas) {
@@ -142,9 +141,10 @@ export async function abrirDb({ url, dirDatos }) {
 
     // Datos del panel de administración, con filtros cruzados y rango de fechas.
     // filtros: [[pregunta, valor], ...] -> solo votantes que dieron TODAS esas respuestas.
-    async panel(filtros = [], desde = 0) {
+    async panel(filtros = [], desde = 0, sinDudosos = false) {
       const donde = ['TRUE'];
       const params = [];
+      if (sinDudosos) donde.push('v.dudoso = FALSE');
       if (desde > 0) {
         params.push(desde);
         donde.push(`v.creado >= $${params.length}`);
@@ -165,7 +165,8 @@ export async function abrirDb({ url, dirDatos }) {
       const tiempos = (await bd.consulta(`SELECT v.creado FROM votantes v WHERE ${cond} ORDER BY v.creado`, params)).rows.map((r) =>
         Number(r.creado)
       );
-      return { total, conteos, tiempos };
+      const dudosos = Number((await uno(`SELECT COUNT(*)::int AS n FROM votantes v WHERE ${cond} AND v.dudoso`, params)).n);
+      return { total, conteos, tiempos, dudosos };
     }
   };
 }

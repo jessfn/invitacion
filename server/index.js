@@ -17,8 +17,8 @@ const PUERTO = Number(process.env.PORT ?? 3000);
 // solo un freno contra scripts, no el control principal (ese es el dispositivo).
 const MAX_POR_IP = Number(process.env.MAX_VOTOS_POR_IP ?? 400);
 const ESTRICTO = process.env.MODO_ESTRICTO !== '0';
-// 1 = una misma huella de dispositivo bloquea el voto desde cualquier red (más estricto, pero dos
-// teléfonos idénticos podrían confundirse). 0 = la huella solo cuenta junto con la misma red.
+// La huella del dispositivo nunca bloquea: solo pide confirmación y marca el voto como dudoso.
+// 1 = se compara la huella con cualquier red. 0 = solo con la misma red.
 const HUELLA_SOLA = process.env.HUELLA_SOLA === '1';
 const MIN_SEGUNDOS = Number(process.env.MIN_SEGUNDOS ?? 6);
 
@@ -206,10 +206,7 @@ async function api(req, res, ruta) {
 
   const yaVoto = () =>
     db.buscarVoto({
-      deviceId: id.dispositivo.id,
-      huella: ESTRICTO ? id.huella : null,
-      ipHash: id.ipHash,
-      huellaSola: HUELLA_SOLA
+      deviceId: id.dispositivo.id
     });
 
   if (req.method === 'GET' && ruta === '/api/evento') {
@@ -254,8 +251,16 @@ async function api(req, res, ruta) {
       filas,
       maxPorIp: MAX_POR_IP,
       estricto: ESTRICTO,
-      huellaSola: HUELLA_SOLA
+      huellaSola: HUELLA_SOLA,
+      confirmo: cuerpo.confirmo === true
     });
+    if (!r.ok && r.motivo === 'confirmar') {
+      await db.registrarBloqueo('aviso').catch(() => {});
+      return json(res, 409, {
+        confirmar: true,
+        error: 'Este teléfono se parece a otro que ya votó desde esta red. Confirma si eres otra persona.'
+      }, extra);
+    }
     if (!r.ok) {
       await db.registrarBloqueo(r.motivo).catch(() => {});
       admin.notificar();
