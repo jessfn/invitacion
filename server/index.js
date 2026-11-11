@@ -35,7 +35,8 @@ const MIME = {
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
-  '.webmanifest': 'application/manifest+json'
+  '.webmanifest': 'application/manifest+json',
+  '.mp3': 'audio/mpeg'
 };
 
 const CABECERAS = {
@@ -280,13 +281,27 @@ async function estatico(req, res, ruta) {
     const info = await stat(archivo);
     if (!info.isFile()) throw new Error('no es archivo');
     const ext = extname(archivo).toLowerCase();
-    res.writeHead(200, {
+    const base = {
       ...CABECERAS,
       ...(archivo.endsWith('admin.html') ? { 'X-Robots-Tag': 'noindex, nofollow' } : {}),
       'Content-Type': MIME[ext] ?? 'application/octet-stream',
-      'Content-Length': info.size,
+      'Accept-Ranges': 'bytes',
       'Cache-Control': ['.html', '.css', '.js'].includes(ext) ? 'no-cache' : 'public, max-age=86400'
-    });
+    };
+    // Soporte de rangos (Range): iPhone y otros navegadores lo exigen para reproducir audio.
+    const rango = req.headers.range && /^bytes=(\d*)-(\d*)$/.exec(req.headers.range);
+    if (rango && (rango[1] || rango[2])) {
+      const ini = rango[1] === '' ? Math.max(0, info.size - Number(rango[2])) : Number(rango[1]);
+      const fin = rango[1] === '' || rango[2] === '' ? info.size - 1 : Math.min(Number(rango[2]), info.size - 1);
+      if (!(ini <= fin && ini < info.size)) {
+        res.writeHead(416, { ...base, 'Content-Range': `bytes */${info.size}` });
+        return res.end();
+      }
+      res.writeHead(206, { ...base, 'Content-Range': `bytes ${ini}-${fin}/${info.size}`, 'Content-Length': fin - ini + 1 });
+      if (req.method === 'HEAD') return res.end();
+      return createReadStream(archivo, { start: ini, end: fin }).pipe(res);
+    }
+    res.writeHead(200, { ...base, 'Content-Length': info.size });
     if (req.method === 'HEAD') return res.end();
     createReadStream(archivo).pipe(res);
   } catch {

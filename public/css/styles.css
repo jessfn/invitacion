@@ -314,3 +314,8 @@ html.portada-abierta { overflow: hidden; }
 
 .musica.cargando { animation: latido 1s ease-in-out infinite; }
 @keyframes latido { 50% { transform: scale(.88); opacity: .6; } }
+
+/* Avisos importantes (acceso y estacionamiento) */
+.avisos { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.tile--aviso { border-color: rgba(255, 212, 90, .35); background: linear-gradient(135deg, rgba(255, 212, 90, .12), rgba(255, 255, 255, .04)); }
+.tile__texto { font-size: 1rem; font-weight: 600; line-height: 1.35; letter-spacing: -.01em; }

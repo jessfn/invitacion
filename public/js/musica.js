@@ -1,17 +1,23 @@
-// Reproductor de la música navideña.
+// Reproductor de la música de la invitación.
 //
-// La pista (campanas y cascabeles de trineo con "Jingle Bells" y "We Wish You a Merry Christmas")
-// se sintetiza UNA sola vez en un Worker (musica-render.js) y aquí solo se reproduce en bucle.
-// Reproducir un buffer casi no usa procesador, así que suena limpio incluso en Android modestos,
-// y el bucle es continuo: nunca se acaba.
+// 1) Principal: el mix en assets/musica/mix-navideno.mp3, en bucle infinito con <audio>
+//    (streaming: casi no usa memoria ni procesador, suena igual en cualquier celular).
+// 2) Respaldo: si ese archivo no está en el servidor, se usa una pista de campanas sintetizada
+//    una sola vez en un Worker (musica-render.js) y reproducida en bucle.
 
-let vivo = null;
-let fuente = null;
-let pista = null; // { izq, der, sr }
-let promesa = null;
+const URL_MIX = new URL('../assets/musica/mix-navideno.mp3', import.meta.url).href;
+
+let audio = null; // <audio> del mix
+let modo = null; // 'mix' | 'campanas'
 let sonando = false;
 let cargando = false;
 const oyentes = new Set();
+
+// ---------- respaldo: campanas sintetizadas ----------
+let vivo = null;
+let fuente = null;
+let pista = null; // { izq, der, sr }
+let promesaPista = null;
 
 function sintetizar() {
   return new Promise((ok, fallo) => {
@@ -29,23 +35,15 @@ function sintetizar() {
   });
 }
 
-// Se puede llamar al cargar la página: no necesita permiso del usuario.
-export function precargar() {
-  if (!promesa) {
-    promesa = sintetizar().then((p) => { pista = p; }).catch((err) => {
-      promesa = null;
+function prepararCampanas() {
+  if (!promesaPista) {
+    promesaPista = sintetizar().then((p) => { pista = p; }).catch((err) => {
+      promesaPista = null;
       throw err;
     });
   }
-  return promesa;
+  return promesaPista;
 }
-
-function avisar() {
-  for (const fn of oyentes) fn(sonando, cargando);
-}
-
-export const alCambiar = (fn) => { oyentes.add(fn); };
-export const estaSonando = () => sonando;
 
 function crearVivo(sr) {
   if (vivo) return;
@@ -57,7 +55,7 @@ function crearVivo(sr) {
   }
 }
 
-function arrancar() {
+function arrancarCampanas() {
   if (fuente || !pista) return;
   const buf = vivo.createBuffer(2, pista.izq.length, pista.sr);
   buf.copyToChannel(pista.izq, 0);
@@ -69,37 +67,83 @@ function arrancar() {
   fuente.start();
 }
 
-// Debe llamarse desde un gesto del usuario (clic o toque) para que el navegador lo permita.
-export async function iniciar() {
-  try {
-    crearVivo(32000);
-    await vivo.resume();
-    sonando = true;
-    if (!pista) {
-      cargando = true;
-      avisar();
-      await precargar();
-      cargando = false;
-    }
-    if (sonando) arrancar();
-  } catch {
-    sonando = false;
+async function iniciarCampanas() {
+  modo = 'campanas';
+  crearVivo(32000);
+  await vivo.resume();
+  if (!pista) {
+    cargando = true;
+    avisar();
+    await prepararCampanas();
     cargando = false;
   }
+  if (sonando) arrancarCampanas();
+}
+
+// ---------- mix principal ----------
+function crearAudio() {
+  if (audio) return audio;
+  audio = new Audio();
+  audio.loop = true; // nunca se acaba
+  audio.preload = 'auto';
+  audio.volume = 1;
+  audio.src = URL_MIX;
+  // Si el archivo no existe en el servidor, se prepara el respaldo en segundo plano.
+  audio.addEventListener('error', () => { prepararCampanas().catch(() => {}); });
+  return audio;
+}
+
+function avisar() {
+  for (const fn of oyentes) fn(sonando, cargando);
+}
+
+export const alCambiar = (fn) => { oyentes.add(fn); };
+export const estaSonando = () => sonando;
+
+// Se puede llamar al cargar la página: empieza a descargar el mix sin reproducirlo.
+export function precargar() {
+  crearAudio();
+  return Promise.resolve();
+}
+
+// Debe llamarse desde un gesto del usuario (clic o toque) para que el navegador lo permita.
+export async function iniciar() {
+  sonando = true;
+  cargando = true;
+  avisar();
+  try {
+    crearAudio();
+    await audio.play();
+    modo = 'mix';
+  } catch (err) {
+    if (err && err.name === 'NotAllowedError') {
+      sonando = false;
+    } else {
+      try {
+        await iniciarCampanas(); // el mix no está disponible: respaldo
+      } catch {
+        sonando = false;
+      }
+    }
+  }
+  cargando = false;
   avisar();
 }
 
 export async function alternar() {
-  if (!vivo || !sonando) return iniciar();
+  if (!sonando) return iniciar();
   sonando = false;
-  await vivo.suspend();
+  if (modo === 'mix') audio.pause();
+  else if (vivo) await vivo.suspend();
   avisar();
 }
 
 // La música no se detiene sola: si el sistema la interrumpe (llamada, bloqueo, otra pestaña),
 // se reanuda al volver o con el siguiente toque.
 const reanudar = () => {
-  if (vivo && sonando && vivo.state !== 'running') vivo.resume().catch(() => {});
+  if (!sonando) return;
+  if (modo === 'mix' && audio && audio.paused) audio.play().catch(() => {});
+  if (modo === 'campanas' && vivo && vivo.state !== 'running') vivo.resume().catch(() => {});
 };
 document.addEventListener('visibilitychange', () => { if (!document.hidden) reanudar(); });
 document.addEventListener('pointerdown', reanudar, true);

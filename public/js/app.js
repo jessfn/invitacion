@@ -62,6 +62,12 @@ function pintarEvento(ev) {
     lugar.replaceChildren(h('a', { href: ev.mapa, target: '_blank', rel: 'noopener noreferrer', class: 'enlace-lugar' }, ev.lugar));
     $('det-direccion').replaceChildren(h('a', { href: ev.mapa, target: '_blank', rel: 'noopener noreferrer', class: 'enlace-dir' }, ev.direccion ?? ''));
   }
+  $('avisos').replaceChildren(
+    ...(ev.avisos ?? []).map((a) =>
+      h('article', { class: 'tile tile--aviso reveal' }, icono(a.icono, 'ico ico--oro'), h('h3', {}, a.titulo), h('p', { class: 'tile__texto' }, a.texto))
+    )
+  );
+  observar('.avisos .tile');
   $('lista-incluye').replaceChildren(...ev.incluye.map((t) => h('li', {}, t)));
   $('linea').replaceChildren(
     ...ev.programa.map((p) =>

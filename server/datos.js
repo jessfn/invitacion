@@ -11,6 +11,10 @@ export const EVENTO = {
   direccion: 'Av. Sta. Ana 750, San Francisco Culhuacan, Ex-Ejido de San Francisco Culhuacan, Coyoacán, 04470 Ciudad de México, CDMX',
   mapa: 'https://www.google.com/maps/search/?api=1&query=Av.%20Sta.%20Ana%20750%2C%20San%20Francisco%20Culhuacan%2C%20Ex-Ejido%20de%20San%20Francisco%20Culhuacan%2C%20Coyoac%C3%A1n%2C%2004470%20Ciudad%20de%20M%C3%A9xico%2C%20CDMX',
   recepcion: '3:00 pm',
+  avisos: [
+    { icono: 'ticket', titulo: 'Acceso', texto: 'La entrada será únicamente con el pase exclusivo de cada invitado.' },
+    { icono: 'car', titulo: 'Estacionamiento', texto: 'Tiene un costo aproximado de $80 MXN.' }
+  ],
   incluye: [
     'Pan',
     'Agua natural',
