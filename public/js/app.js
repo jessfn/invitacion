@@ -64,7 +64,9 @@ function pintarEvento(ev) {
   }
   $('avisos').replaceChildren(
     ...(ev.avisos ?? []).map((a) =>
-      h('article', { class: 'tile tile--aviso reveal' }, icono(a.icono, 'ico ico--oro'), h('h3', {}, a.titulo), h('p', { class: 'tile__texto' }, a.texto))
+      h('article', { class: `tile tile--aviso reveal${a.fiesta ? ' tile--fiesta' : ''}` },
+        a.fiesta ? ambienteFiesta() : null,
+        icono(a.icono, 'ico ico--oro'), h('h3', {}, a.titulo), h('p', { class: 'tile__texto' }, a.texto))
     )
   );
   observar('.avisos .tile');
@@ -79,6 +81,33 @@ function pintarEvento(ev) {
   );
   observar('.linea li');
   if (fecha) iniciarCuenta(fecha);
+}
+
+// Burbujas de brindis y chispas de confeti detrás de la tarjeta (solo transform y opacidad).
+function ambienteFiesta() {
+  const caja = h('div', { class: 'ambiente', 'aria-hidden': 'true' });
+  const burbujas = [
+    [8, 9, 5.2, 0, -12], [20, 6, 6.4, 1.6, 10], [34, 11, 5.6, 0.7, -8], [48, 7, 7, 2.4, 14],
+    [62, 10, 5.8, 1.1, -10], [75, 6, 6.6, 3, 8], [88, 9, 5.4, 0.3, -14], [94, 5, 7.2, 2, 6]
+  ];
+  for (const [x, s, t, d, dx] of burbujas) {
+    const b = h('i', { class: 'burbuja' });
+    b.style.setProperty('--x', `${x}%`);
+    b.style.setProperty('--s', `${s}px`);
+    b.style.setProperty('--t', `${t}s`);
+    b.style.setProperty('--d', `${d}s`);
+    b.style.setProperty('--dx', `${dx}px`);
+    caja.append(b);
+  }
+  const chispas = [[12, 16, 0], [78, 12, 0.9], [90, 52, 1.7], [58, 8, 2.4]];
+  for (const [x, y, d] of chispas) {
+    const c = h('i', { class: 'chispa' });
+    c.style.setProperty('--x', `${x}%`);
+    c.style.setProperty('--y', `${y}%`);
+    c.style.setProperty('--d', `${d}s`);
+    caja.append(c);
+  }
+  return caja;
 }
 
 function iniciarCuenta(fecha) {

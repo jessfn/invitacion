@@ -13,7 +13,8 @@ export const EVENTO = {
   recepcion: '3:00 pm',
   avisos: [
     { icono: 'ticket', titulo: 'Acceso', texto: 'La entrada será únicamente con el pase exclusivo de cada invitado.' },
-    { icono: 'car', titulo: 'Estacionamiento', texto: 'Tiene un costo aproximado de $80 MXN.' }
+    { icono: 'car', titulo: 'Estacionamiento', texto: 'Tiene un costo aproximado de $80 MXN.' },
+    { icono: 'wine', titulo: 'Bebidas alcohólicas', texto: 'No están incluidas en el evento: cada invitado lleva las que desee consumir. ¡Brindemos con responsabilidad!', fiesta: true }
   ],
   incluye: [
     'Pan',

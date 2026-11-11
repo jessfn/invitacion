@@ -319,3 +319,23 @@ html.portada-abierta { overflow: hidden; }
 .avisos { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
 .tile--aviso { border-color: rgba(255, 212, 90, .35); background: linear-gradient(135deg, rgba(255, 212, 90, .12), rgba(255, 255, 255, .04)); }
 .tile__texto { font-size: 1rem; font-weight: 600; line-height: 1.35; letter-spacing: -.01em; }
+
+/* Tarjeta de brindis: burbujas que suben, chispas de confeti y copa que brinda */
+.tile--fiesta { background: linear-gradient(135deg, rgba(255, 59, 82, .16), rgba(255, 212, 90, .12) 55%, rgba(37, 211, 162, .08)); }
+.tile--fiesta > :not(.ambiente) { position: relative; z-index: 1; }
+.ambiente { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.burbuja { position: absolute; bottom: -14px; left: var(--x); width: var(--s); height: var(--s); border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .9), rgba(255, 212, 90, .35));
+  animation: burbuja var(--t) linear var(--d) infinite; }
+@keyframes burbuja {
+  0% { transform: translate3d(0, 0, 0) scale(.6); opacity: 0; }
+  15% { opacity: .85; }
+  100% { transform: translate3d(var(--dx), -210px, 0) scale(1.1); opacity: 0; }
+}
+.chispa { position: absolute; left: var(--x); top: var(--y); width: 10px; height: 10px; opacity: 0;
+  background: #ffe9a3; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: chispa 3.2s ease-in-out var(--d) infinite; }
+@keyframes chispa { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 45% { opacity: 1; transform: scale(1) rotate(60deg); } 70% { opacity: 0; transform: scale(.5) rotate(120deg); } }
+.tile--fiesta .ico--oro { transform-origin: 50% 92%; animation: brindis 3.6s ease-in-out infinite; }
+@keyframes brindis { 0%, 55%, 100% { transform: rotate(0); } 64% { transform: rotate(-16deg); } 73% { transform: rotate(10deg); } 82% { transform: rotate(-5deg); } 90% { transform: rotate(2deg); } }
+@media (prefers-reduced-motion: reduce) { .burbuja, .chispa { animation: none; opacity: 0; } }
