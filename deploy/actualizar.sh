@@ -6,8 +6,8 @@ APP_USER="invitacion"
 
 [ "$(id -u)" -eq 0 ] || { echo "Ejecuta este script como root."; exit 1; }
 
-git -C "$APP_DIR" fetch --all --quiet
-git -C "$APP_DIR" reset --hard origin/main
+git -c safe.directory="$APP_DIR" -C "$APP_DIR" fetch --all --quiet
+git -c safe.directory="$APP_DIR" -C "$APP_DIR" reset --hard origin/main
 chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
 sudo -u "$APP_USER" bash -c "cd '$APP_DIR' && npm ci --omit=dev"
 systemctl restart invitacion

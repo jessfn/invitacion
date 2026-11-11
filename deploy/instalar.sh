@@ -35,8 +35,8 @@ node -v
 paso "Usuario del servicio y código"
 id "$APP_USER" >/dev/null 2>&1 || useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin "$APP_USER"
 if [ -d "$APP_DIR/.git" ]; then
-  git -C "$APP_DIR" fetch --all --quiet
-  git -C "$APP_DIR" reset --hard origin/main
+  git -c safe.directory="$APP_DIR" -C "$APP_DIR" fetch --all --quiet
+  git -c safe.directory="$APP_DIR" -C "$APP_DIR" reset --hard origin/main
 else
   git clone "$REPO" "$APP_DIR"
 fi
