@@ -3,6 +3,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/jessfn/invitacion/main/deploy/instalar.sh -o instalar.sh
 #   bash instalar.sh
 # Es repetible: si ya está instalado, actualiza y reinicia.
+# Si defines DB_PASS, ADM_USER y ADM_PASS en el entorno no pregunta nada.
 set -euo pipefail
 
 DOMINIO="${DOMINIO:-fiestatic.minvitacion.cloud}"
@@ -49,7 +50,7 @@ sudo -u postgres psql -v ON_ERROR_STOP=1 -f "$APP_DIR/deploy/crear-base.sql"
 
 paso "Configuración privada ($ENV_FILE)"
 if [ ! -f "$ENV_FILE" ]; then
-  read -r -s -p "Contraseña del usuario '$DB_USER' de PostgreSQL: " DB_PASS; echo
+  if [ -z "${DB_PASS:-}" ]; then read -r -s -p "Contraseña del usuario '$DB_USER' de PostgreSQL: " DB_PASS; echo; fi
   [ -n "$DB_PASS" ] || { echo "La contraseña no puede estar vacía."; exit 1; }
   DB_PASS_URL="$(DB_PASS="$DB_PASS" python3 -c 'import os,urllib.parse;print(urllib.parse.quote(os.environ["DB_PASS"],safe=""))')"
   umask 077
@@ -76,8 +77,9 @@ import('pg').then(async ({default: pg}) => {
 
 paso "Administrador del panel (/admin)"
 if [ ! -f "$APP_DIR/data/admin.json" ]; then
-  read -r -p "Usuario administrador [admin]: " ADM_USER; ADM_USER="${ADM_USER:-admin}"
-  read -r -s -p "Contraseña del administrador: " ADM_PASS; echo
+  if [ -z "${ADM_USER:-}" ]; then read -r -p "Usuario administrador [admin]: " ADM_USER; fi
+  ADM_USER="${ADM_USER:-admin}"
+  if [ -z "${ADM_PASS:-}" ]; then read -r -s -p "Contraseña del administrador: " ADM_PASS; echo; fi
   [ -n "$ADM_PASS" ] || { echo "La contraseña no puede estar vacía."; exit 1; }
   sudo -u "$APP_USER" bash -c "cd '$APP_DIR' && node server/crear-admin.js \"\$0\" \"\$1\"" "$ADM_USER" "$ADM_PASS"
 else
