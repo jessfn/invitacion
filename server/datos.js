@@ -81,6 +81,7 @@ export const ENCUESTAS = [
     descripcion: 'Ambiente mientras comemos.',
     icono: 'headphones',
     tipo: 'unica',
+    desplegable: true,
     opciones: [
       { id: 'instrumental', label: 'Instrumental / Jazz suave' },
       { id: 'baladas', label: 'Baladas románticas' },
@@ -96,6 +97,7 @@ export const ENCUESTAS = [
     descripcion: '¿Qué géneros quieres en la pista?',
     icono: 'music',
     tipo: 'multiple',
+    desplegable: true,
     max: 3,
     opciones: [
       { id: 'cumbia', label: 'Cumbia' },
@@ -110,25 +112,6 @@ export const ENCUESTAS = [
       { id: 'ochentas-noventas', label: 'Éxitos 80s y 90s' },
       { id: 'tropical', label: 'Tropical / Sonidero' },
       { id: 'urbano', label: 'Urbano / Hip hop' }
-    ]
-  },
-  {
-    id: 'musica-no',
-    titulo: 'Música que NO quieres',
-    descripcion: 'Para que el DJ sepa qué evitar.',
-    icono: 'ban',
-    tipo: 'multiple',
-    max: 3,
-    opciones: [
-      { id: 'no-banda', label: 'Banda' },
-      { id: 'no-norteno', label: 'Norteño' },
-      { id: 'no-reggaeton', label: 'Reggaetón' },
-      { id: 'no-electronica', label: 'Electrónica' },
-      { id: 'no-rock', label: 'Rock' },
-      { id: 'no-baladas', label: 'Baladas' },
-      { id: 'no-cumbia', label: 'Cumbia' },
-      { id: 'no-urbano', label: 'Urbano / Hip hop' },
-      { id: 'ninguna', label: 'Me gusta todo' }
     ]
   },
   {

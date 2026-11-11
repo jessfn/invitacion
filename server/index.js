@@ -161,6 +161,20 @@ function resultadosPublicos(propias) {
   return { total, preguntas };
 }
 
+// Lo que ve el votante: solo sus propias elecciones, sin conteos ni porcentajes.
+function misRespuestas(propias) {
+  const por = new Map();
+  for (const { pregunta, valor } of propias) por.set(pregunta, [...(por.get(pregunta) ?? []), valor]);
+  return {
+    preguntas: ENCUESTAS.map((e) => ({
+      id: e.id,
+      titulo: e.titulo,
+      icono: e.icono,
+      mias: (por.get(e.id) ?? []).map((v) => e.opciones?.find((o) => o.id === v)?.label ?? v)
+    })).filter((p) => p.mias.length)
+  };
+}
+
 const mismaClave = (a, b) => {
   const A = Buffer.from(a);
   const B = Buffer.from(b);
@@ -180,8 +194,8 @@ async function api(req, res, ruta) {
     });
 
   if (req.method === 'GET' && ruta === '/api/evento') {
-    const catalogo = ENCUESTAS.map(({ id: eid, titulo, descripcion, icono, tipo, max, maxLength, placeholder, opciones }) => ({
-      id: eid, titulo, descripcion, icono, tipo, max, maxLength, placeholder, opciones
+    const catalogo = ENCUESTAS.map(({ id: eid, titulo, descripcion, icono, tipo, desplegable, max, maxLength, placeholder, opciones }) => ({
+      id: eid, titulo, descripcion, icono, tipo, desplegable, max, maxLength, placeholder, opciones
     }));
     return json(res, 200, { evento: EVENTO, encuestas: catalogo, yaVoto: Boolean(yaVoto()) }, extra);
   }
@@ -189,7 +203,7 @@ async function api(req, res, ruta) {
   if (req.method === 'GET' && ruta === '/api/resultados') {
     if (!yaVoto()) return json(res, 403, { error: 'Vota primero para ver los resultados.' }, extra);
     const votanteId = db.votantePorDispositivo(id.dispositivo.id);
-    return json(res, 200, resultadosPublicos(votanteId ? db.respuestasDe(votanteId) : []), extra);
+    return json(res, 200, misRespuestas(votanteId ? db.respuestasDe(votanteId) : []), extra);
   }
 
   if (req.method === 'POST' && ruta === '/api/votar') {
