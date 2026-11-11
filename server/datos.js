@@ -14,7 +14,7 @@ export const EVENTO = {
   avisos: [
     { icono: 'ticket', titulo: 'Acceso', texto: 'La entrada será únicamente con el pase exclusivo de cada invitado.' },
     { icono: 'car', titulo: 'Estacionamiento', texto: 'Tiene un costo aproximado de $80 MXN.' },
-    { icono: 'wine', titulo: 'Bebidas alcohólicas', texto: 'No están incluidas en el evento: cada invitado lleva las que desee consumir. ¡Brindemos con responsabilidad!', fiesta: true }
+    { icono: 'wine', titulo: 'Bebidas alcohólicas', texto: 'Cada quien lleva lo que desee consumir. ¡Tú pon la bebida, nosotros la fiesta!', fiesta: true }
   ],
   incluye: [
     'Pan',
